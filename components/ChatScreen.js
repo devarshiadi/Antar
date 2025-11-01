@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -18,18 +17,20 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import FeatherIcon from 'react-native-vector-icons/Feather';
+import {
+  ArrowLeft,
+  Phone,
+  Info,
+  Paperclip,
+  Send,
+  Check,
+  CheckCheck,
+  User,
+  MapPin,
+  MoreVertical,
+} from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
-
-// Online CDN Images for avatars and map
-const CDN_IMAGES = {
-  avatar: 'https://i.pravatar.cc/150?img=3',
-  mapThumbnail: 'https://via.placeholder.com/50/4A90E2/FFFFFF?text=MAP',
-  userAvatar: 'https://i.pravatar.cc/150?img=8',
-};
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([
@@ -43,13 +44,15 @@ const ChatScreen = () => {
 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [inputHeight, setInputHeight] = useState(40);
   
   const scrollViewRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const typingAnim = useRef(new Animated.Value(0)).current;
+  const sendButtonScale = useRef(new Animated.Value(1)).current;
+  const typingAnimationRef = useRef(null);
 
   useEffect(() => {
     // Animate container on mount
@@ -70,8 +73,9 @@ const ChatScreen = () => {
     // Keyboard listeners
     const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
-      scrollToBottom();
+      setTimeout(() => scrollToBottom(), 100);
     });
+    
     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
     });
@@ -79,18 +83,21 @@ const ChatScreen = () => {
     return () => {
       keyboardDidShow.remove();
       keyboardDidHide.remove();
+      if (typingAnimationRef.current) {
+        typingAnimationRef.current.stop();
+      }
     };
   }, []);
 
   useEffect(() => {
     // Auto scroll to bottom when new message arrives
-    scrollToBottom();
+    setTimeout(() => scrollToBottom(), 100);
   }, [messages]);
 
   useEffect(() => {
     // Typing animation
     if (isTyping) {
-      Animated.loop(
+      typingAnimationRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(typingAnim, {
             toValue: 1,
@@ -103,14 +110,26 @@ const ChatScreen = () => {
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      typingAnimationRef.current.start();
+    } else {
+      if (typingAnimationRef.current) {
+        typingAnimationRef.current.stop();
+        typingAnim.setValue(0);
+      }
     }
+
+    return () => {
+      if (typingAnimationRef.current) {
+        typingAnimationRef.current.stop();
+      }
+    };
   }, [isTyping]);
 
   const scrollToBottom = () => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
   };
 
   const sendMessage = () => {
@@ -123,19 +142,16 @@ const ChatScreen = () => {
         read: false,
       };
 
-      // Haptic feedback (if available)
-      // You can add react-native-haptic-feedback for better experience
-
       // Animate send button
       Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.95,
-          duration: 50,
+        Animated.timing(sendButtonScale, {
+          toValue: 0.8,
+          duration: 100,
           useNativeDriver: true,
         }),
-        Animated.spring(scaleAnim, {
+        Animated.spring(sendButtonScale, {
           toValue: 1,
-          friction: 8,
+          friction: 3,
           tension: 40,
           useNativeDriver: true,
         }),
@@ -143,6 +159,7 @@ const ChatScreen = () => {
 
       setMessages([...messages, newMessage]);
       setInputText('');
+      setInputHeight(40);
       
       // Simulate typing indicator
       setTimeout(() => {
@@ -186,25 +203,38 @@ const ChatScreen = () => {
     Alert.alert('Trip Info', 'Trip ID: #A12C3B\nDriver: Lialin\nStatus: Active', [{ text: 'OK' }]);
   };
 
+  const handleContentSizeChange = (event) => {
+    const newHeight = Math.min(100, Math.max(40, event.nativeEvent.contentSize.height));
+    setInputHeight(newHeight);
+  };
+
   const MessageBubble = ({ msg, index, isConsecutive }) => {
     const bubbleAnim = useRef(new Animated.Value(0)).current;
+    const bubbleScale = useRef(new Animated.Value(0.8)).current;
 
     useEffect(() => {
-      Animated.spring(bubbleAnim, {
-        toValue: 1,
-        delay: index * 50,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(bubbleAnim, {
+          toValue: 1,
+          delay: index * 30,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(bubbleScale, {
+          toValue: 1,
+          delay: index * 30,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }, []);
 
     return (
       <Animated.View
         style={[
-          styles.messageBubble,
-          msg.type === 'sent' ? styles.sentBubble : styles.receivedBubble,
-          isConsecutive && styles.consecutiveMessage,
+          styles.messageRow,
+          msg.type === 'sent' && styles.sentRow,
           {
             opacity: bubbleAnim,
             transform: [
@@ -215,24 +245,40 @@ const ChatScreen = () => {
                 }),
               },
               {
-                scale: bubbleAnim,
+                scale: bubbleScale,
               },
             ],
           },
         ]}
       >
-        <Text style={msg.type === 'sent' ? styles.sentText : styles.receivedText}>
-          {msg.text}
-        </Text>
-        {msg.type === 'sent' && (
-          <Image 
-            source={{ uri: CDN_IMAGES.userAvatar }} 
-            style={styles.avatar}
-          />
+        {msg.type === 'received' && !isConsecutive && (
+          <View style={styles.avatarContainer}>
+            <User size={16} color="#FFFFFF" />
+          </View>
         )}
-        {msg.type === 'received' && msg.read && (
-          <Icon name="checkmark-done" size={16} color="#4A4A4A" style={styles.checkmark} />
-        )}
+        
+        <View
+          style={[
+            styles.messageBubble,
+            msg.type === 'sent' ? styles.sentBubble : styles.receivedBubble,
+            isConsecutive && styles.consecutiveMessage,
+            msg.type === 'received' && isConsecutive && styles.consecutiveReceivedMargin,
+          ]}
+        >
+          <Text style={msg.type === 'sent' ? styles.sentText : styles.receivedText}>
+            {msg.text}
+          </Text>
+          
+          {msg.type === 'sent' && (
+            <View style={styles.messageStatus}>
+              {msg.read ? (
+                <CheckCheck size={14} color="#FFFFFF" style={styles.checkmark} />
+              ) : (
+                <Check size={14} color="#FFFFFF" style={styles.checkmark} />
+              )}
+            </View>
+          )}
+        </View>
       </Animated.View>
     );
   };
@@ -240,158 +286,151 @@ const ChatScreen = () => {
   const TypingIndicator = () => (
     <Animated.View 
       style={[
-        styles.typingIndicator,
+        styles.typingContainer,
         {
           opacity: typingAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: [0.5, 1],
+            outputRange: [0.3, 1],
           }),
         },
       ]}
     >
-      <View style={[styles.typingDot, { backgroundColor: '#8E8E93' }]} />
-      <View style={[styles.typingDot, { backgroundColor: '#8E8E93', marginLeft: 4 }]} />
-      <View style={[styles.typingDot, { backgroundColor: '#8E8E93', marginLeft: 4 }]} />
+      <View style={styles.avatarContainer}>
+        <User size={16} color="#FFFFFF" />
+      </View>
+      <View style={styles.typingIndicator}>
+        <View style={[styles.typingDot, { backgroundColor: '#8E8E93' }]} />
+        <View style={[styles.typingDot, { backgroundColor: '#8E8E93', marginLeft: 4 }]} />
+        <View style={[styles.typingDot, { backgroundColor: '#8E8E93', marginLeft: 4 }]} />
+      </View>
     </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#1C1C1E" />
       
       <KeyboardAvoidingView 
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={{ flex: 1 }}>
-            {/* Header */}
-            <Animated.View 
-              style={[
-                styles.header,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ scale: scaleAnim }],
-                }
-              ]}
+        {/* Header */}
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            }
+          ]}
+        >
+          <TouchableOpacity style={styles.backButton} activeOpacity={0.7}>
+            <ArrowLeft size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerContent}>
+            <View style={styles.mapIconContainer}>
+              <MapPin size={24} color="#FFFFFF" />
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={styles.tripId}>Trip ID: #A12C3B</Text>
+              <Text style={styles.driverName}>Lialin</Text>
+            </View>
+          </View>
+          
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.headerAction} onPress={handleCall} activeOpacity={0.7}>
+              <Phone size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerAction} onPress={handleInfo} activeOpacity={0.7}>
+              <Info size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+        
+        {/* Chat Area */}
+        <Animated.View 
+          style={[
+            styles.chatContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            }
+          ]}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView 
+              ref={scrollViewRef}
+              contentContainerStyle={styles.messageList}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              bounces={true}
             >
-              <TouchableOpacity style={styles.backButton}>
-                <Icon name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
+              {messages.map((msg, index) => {
+                const isConsecutive = index > 0 && messages[index - 1].type === msg.type;
+                return (
+                  <MessageBubble 
+                    key={msg.id} 
+                    msg={msg} 
+                    index={index}
+                    isConsecutive={isConsecutive}
+                  />
+                );
+              })}
               
-              <View style={styles.headerContent}>
-                {imageLoading && (
-                  <View style={[styles.mapThumbnail, styles.loadingPlaceholder]}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  </View>
-                )}
-                <Image 
-                  source={{ uri: CDN_IMAGES.mapThumbnail }}
-                  style={[styles.mapThumbnail, imageLoading && { position: 'absolute', opacity: 0 }]}
-                  onLoadEnd={() => setImageLoading(false)}
-                />
-                <View style={styles.headerInfo}>
-                  <Text style={styles.tripId}>Trip ID: #A12C3B</Text>
-                  <Text style={styles.driverName}>Lialin</Text>
-                </View>
-              </View>
-              
-              <View style={styles.headerActions}>
-                <TouchableOpacity style={styles.headerAction} onPress={handleCall}>
-                  <Icon name="call" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.headerAction} onPress={handleInfo}>
-                  <Icon name="information-circle-outline" size={22} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
+              {isTyping && <TypingIndicator />}
+            </ScrollView>
+          </TouchableWithoutFeedback>
+          
+          {/* Message Input */}
+          <View style={[styles.inputContainer, keyboardVisible && styles.inputContainerKeyboard]}>
+            <TouchableOpacity 
+              style={styles.attachButton}
+              activeOpacity={0.7}
+              onPress={handleAttachment}
+            >
+              <Paperclip size={22} color="#8E8E93" />
+            </TouchableOpacity>
             
-            {/* Chat Area */}
-            <Animated.View 
-              style={[
-                styles.chatContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ scale: scaleAnim }],
-                }
-              ]}
+            <TextInput
+              style={[styles.textInput, { height: Math.max(40, inputHeight) }]}
+              placeholder="Message..."
+              placeholderTextColor="#8E8E93"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              onContentSizeChange={handleContentSizeChange}
+              onSubmitEditing={sendMessage}
+              returnKeyType="send"
+              blurOnSubmit={false}
+              textAlignVertical="center"
+            />
+            
+            <Animated.View
+              style={{
+                transform: [{ scale: sendButtonScale }],
+              }}
             >
-              <ScrollView 
-                ref={scrollViewRef}
-                contentContainerStyle={styles.messageList}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
+              <TouchableOpacity 
+                style={[
+                  styles.sendButton,
+                  inputText.trim() ? styles.sendButtonActive : styles.sendButtonInactive
+                ]}
+                onPress={sendMessage}
+                disabled={!inputText.trim()}
+                activeOpacity={0.7}
               >
-                {messages.map((msg, index) => {
-                  const isConsecutive = index < messages.length - 1 && messages[index + 1].type === msg.type;
-                  return (
-                    <MessageBubble 
-                      key={msg.id} 
-                      msg={msg} 
-                      index={index}
-                      isConsecutive={isConsecutive}
-                    />
-                  );
-                })}
-                
-                {isTyping && <TypingIndicator />}
-              </ScrollView>
-              
-              {/* Message Input */}
-              <View style={styles.inputContainer}>
-                <TouchableOpacity 
-                  style={styles.attachButton}
-                  activeOpacity={0.7}
-                  onPress={handleAttachment}
-                >
-                  <FeatherIcon name="paperclip" size={22} color="#8E8E93" />
-                </TouchableOpacity>
-                
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Message..."
-                  placeholderTextColor="#8E8E93"
-                  value={inputText}
-                  onChangeText={setInputText}
-                  multiline
-                  maxHeight={100}
-                  onSubmitEditing={sendMessage}
-                  returnKeyType="send"
-                  blurOnSubmit={false}
+                <Send 
+                  size={18} 
+                  color="#FFFFFF" 
+                  style={{ transform: [{ translateX: -1 }] }}
                 />
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.sendButton,
-                    inputText.trim() ? styles.sendButtonActive : styles.sendButtonInactive
-                  ]}
-                  onPress={sendMessage}
-                  disabled={!inputText.trim()}
-                  activeOpacity={0.7}
-                >
-                  <Animated.View
-                    style={{
-                      transform: [
-                        {
-                          scale: inputText.trim() ? 1 : 0.8,
-                        },
-                      ],
-                    }}
-                  >
-                    <Icon 
-                      name="send" 
-                      size={18} 
-                      color="#FFFFFF" 
-                      style={{ transform: [{ translateX: -2 }, { translateY: -1 }] }}
-                    />
-                  </Animated.View>
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </Animated.View>
           </View>
-        </TouchableWithoutFeedback>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -433,14 +472,12 @@ const styles = StyleSheet.create({
     padding: 5,
     marginLeft: 10,
   },
-  mapThumbnail: {
+  mapIconContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
     marginRight: 15,
-    backgroundColor: '#3A3A3C',
-  },
-  loadingPlaceholder: {
+    backgroundColor: '#4A90E2',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -470,11 +507,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     flexGrow: 1,
   },
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    alignItems: 'flex-end',
+  },
+  sentRow: {
+    justifyContent: 'flex-end',
+  },
+  avatarContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   messageBubble: {
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 20,
-    marginBottom: 10,
     maxWidth: '75%',
     flexDirection: 'row',
     alignItems: 'center',
@@ -487,13 +540,16 @@ const styles = StyleSheet.create({
   consecutiveMessage: {
     marginBottom: 4,
   },
+  consecutiveReceivedMargin: {
+    marginLeft: 36,
+  },
   sentBubble: {
     backgroundColor: '#0B64E4',
-    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
   },
   receivedBubble: {
     backgroundColor: '#E5E5EA',
-    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
   },
   sentText: {
     color: '#FFFFFF',
@@ -505,16 +561,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 20,
   },
-  avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginLeft: 10,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
+  messageStatus: {
+    marginLeft: 8,
   },
   checkmark: {
-    marginLeft: 8,
+    opacity: 0.8,
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   typingIndicator: {
     flexDirection: 'row',
@@ -523,8 +579,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     backgroundColor: '#E5E5EA',
     borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginBottom: 10,
+    borderBottomLeftRadius: 4,
   },
   typingDot: {
     width: 8,
@@ -533,7 +588,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderTopWidth: 1,
@@ -541,21 +596,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
     minHeight: 60,
   },
+  inputContainerKeyboard: {
+    paddingBottom: Platform.OS === 'ios' ? 10 : 10,
+  },
   attachButton: {
     padding: 5,
+    marginBottom: Platform.OS === 'ios' ? 5 : 7,
   },
   textInput: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    paddingTop: Platform.OS === 'ios' ? 10 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
     fontSize: 16,
     marginHorizontal: 10,
     borderWidth: 1,
     borderColor: '#E5E5EA',
     minHeight: 40,
     maxHeight: 100,
+    color: '#000000',
   },
   sendButton: {
     borderRadius: 18,
@@ -563,6 +624,7 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Platform.OS === 'ios' ? 2 : 4,
   },
   sendButtonActive: {
     backgroundColor: '#0B64E4',
