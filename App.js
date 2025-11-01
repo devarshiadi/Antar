@@ -4,11 +4,11 @@ import LoginScreen from './components/LoginScreen';
 import WelcomeScreen from './components/WelcomeScreen';
 import RegisterScreen from './components/RegisterScreen';
 import VerificationScreen from './components/VerificationScreen';
-
+import ChatScreen from './components/ChatScreen';
 export default function App() {
   return (
-    <VerificationScreen/>
-    
+    // <VerificationScreen/>
+  <ChatScreen/> 
   );
 }
 
