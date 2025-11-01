@@ -5,10 +5,16 @@ import WelcomeScreen from './components/WelcomeScreen';
 import RegisterScreen from './components/RegisterScreen';
 import VerificationScreen from './components/VerificationScreen';
 import ChatScreen from './components/ChatScreen';
+import RideSummaryScreen from './components/RideSummaryScreen';
+import VehicleDetailsScreen from './components/VehicleDetailsScreen';
+import AppSettingsScreen from './components/AppSettingsScreen';
+
 export default function App() {
   return (
     // <VerificationScreen/>
-  <ChatScreen/> 
+  <AppSettingsScreen/> 
+
+
   );
 }
 
