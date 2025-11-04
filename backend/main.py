@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
+
 import models
 import schemas
 import utils
 from database import engine, get_db
 
+# Create database tables
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
