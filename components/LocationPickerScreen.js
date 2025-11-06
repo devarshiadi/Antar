@@ -32,10 +32,21 @@ const getDualPickerMapHTML = (lat, lng) => `
   <style>
     body { margin: 0; padding: 0; }
     #map { height: 100vh; width: 100vw; }
+    .legend { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 8px 12px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+    .legend-row { display:flex; align-items:center; gap:8px; margin: 3px 0; }
+    .dot { width: 12px; height: 12px; border-radius: 6px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .dot-blue { background:#4A90E2; }
+    .dot-green { background:#4CAF50; }
+    .dot-red { background:#F44336; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="legend">
+    <div class="legend-row"><span class="dot dot-blue"></span> You</div>
+    <div class="legend-row"><span class="dot dot-green"></span> Pickup</div>
+    <div class="legend-row"><span class="dot dot-red"></span> Destination</div>
+  </div>
   <script>
     var map = L.map('map').setView([${lat}, ${lng}], 13);
     
@@ -73,6 +84,63 @@ const getDualPickerMapHTML = (lat, lng) => `
     // Route line
     var routeLine = null;
 
+    // Helper to (re)draw route
+    function drawRoute() {
+      if (!(pickupMarker && destMarker)) return;
+      if (routeLine) { map.removeLayer(routeLine); }
+      var start = pickupMarker.getLatLng();
+      var end = destMarker.getLatLng();
+      var midLat = (start.lat + end.lat) / 2;
+      var midLng = (start.lng + end.lng) / 2;
+      var dx = end.lng - start.lng;
+      var dy = end.lat - start.lat;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      var offset = dist * 0.15;
+      var offsetLat = midLat - offset * dx / dist;
+      var offsetLng = midLng + offset * dy / dist;
+      routeLine = L.polyline([
+        start,
+        [offsetLat, offsetLng],
+        end
+      ], {
+        color: '#4A90E2',
+        weight: 4,
+        opacity: 0.8,
+        smoothFactor: 3
+      }).addTo(map);
+      map.fitBounds([pickupMarker.getLatLng(), destMarker.getLatLng()], {padding: [50, 50]});
+    }
+
+    // JS bridge: allow RN to set markers and clear/reset
+    window.setPickup = function(lat, lng) {
+      if (pickupMarker) { map.removeLayer(pickupMarker); }
+      pickupMarker = L.marker([lat, lng], {icon: pickupIcon}).addTo(map).bindPopup('Pickup Location');
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pickup_selected', latitude: lat, longitude: lng }));
+      drawRoute();
+    };
+
+    window.setDestination = function(lat, lng) {
+      if (destMarker) { map.removeLayer(destMarker); }
+      destMarker = L.marker([lat, lng], {icon: destIcon}).addTo(map).bindPopup('Destination');
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'destination_selected', latitude: lat, longitude: lng }));
+      drawRoute();
+    };
+
+    window.clearMarkers = function() {
+      if (pickupMarker) { map.removeLayer(pickupMarker); }
+      if (destMarker) { map.removeLayer(destMarker); }
+      if (routeLine) { map.removeLayer(routeLine); }
+      pickupMarker = null; destMarker = null; routeLine = null;
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'reset' }));
+    };
+
+    window.updateUser = function(lat, lng) {
+      if (currentMarker) { map.removeLayer(currentMarker); }
+      currentMarker = L.circleMarker([lat, lng], {
+        color: '#4A90E2', fillColor: '#4A90E2', fillOpacity: 0.7, radius: 8, weight: 2
+      }).addTo(map);
+    };
+
     // Add click event to map - first tap = pickup, second tap = destination
     map.on('click', function(e) {
       if (!pickupMarker) {
@@ -95,43 +163,7 @@ const getDualPickerMapHTML = (lat, lng) => `
           .bindPopup('Destination')
           .openPopup();
         
-        // Draw curved route line
-        if (routeLine) {
-          map.removeLayer(routeLine);
-        }
-        
-        // Create a curved path with a midpoint offset
-        var start = pickupMarker.getLatLng();
-        var end = destMarker.getLatLng();
-        
-        // Calculate midpoint
-        var midLat = (start.lat + end.lat) / 2;
-        var midLng = (start.lng + end.lng) / 2;
-        
-        // Offset the midpoint perpendicular to the line
-        var dx = end.lng - start.lng;
-        var dy = end.lat - start.lat;
-        var dist = Math.sqrt(dx*dx + dy*dy);
-        var offset = dist * 0.15; // 15% offset for curve
-        
-        // Perpendicular offset
-        var offsetLat = midLat - offset * dx / dist;
-        var offsetLng = midLng + offset * dy / dist;
-        
-        // Create smooth curve through 3 points
-        routeLine = L.polyline([
-          start,
-          [offsetLat, offsetLng],
-          end
-        ], {
-          color: '#4A90E2',
-          weight: 4,
-          opacity: 0.8,
-          smoothFactor: 3
-        }).addTo(map);
-        
-        // Fit bounds to show both markers
-        map.fitBounds([pickupMarker.getLatLng(), destMarker.getLatLng()], {padding: [50, 50]});
+        drawRoute();
         
         // Notify React Native
         window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -141,17 +173,7 @@ const getDualPickerMapHTML = (lat, lng) => `
         }));
       } else {
         // Both already set - reset and start over
-        map.removeLayer(pickupMarker);
-        map.removeLayer(destMarker);
-        if (routeLine) map.removeLayer(routeLine);
-        
-        pickupMarker = null;
-        destMarker = null;
-        routeLine = null;
-        
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'reset'
-        }));
+        window.clearMarkers();
       }
     });
 
@@ -170,11 +192,27 @@ const LocationPickerScreen = ({ navigation, route }) => {
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [destAddress, setDestAddress] = useState('');
 
   const { tripType = 'offer' } = route.params || {};
 
   useEffect(() => {
     initializeLocation();
+    let stop = false;
+    // start live tracking and update map marker
+    locationService.startTracking((loc) => {
+      if (webViewRef.current) {
+        const js = `window.updateUser(${loc.latitude}, ${loc.longitude});`;
+        webViewRef.current.injectJavaScript(js);
+      }
+    }).catch(() => {});
+    return () => {
+      if (!stop) {
+        locationService.stopTracking();
+        stop = true;
+      }
+    };
   }, []);
 
   const initializeLocation = async () => {
@@ -205,18 +243,22 @@ const LocationPickerScreen = ({ navigation, route }) => {
       const data = JSON.parse(event.nativeEvent.data);
       
       if (data.type === 'pickup_selected') {
-        setPickupLocation({
-          latitude: data.latitude,
-          longitude: data.longitude,
+        const loc = { latitude: data.latitude, longitude: data.longitude };
+        setPickupLocation(loc);
+        locationService.getAddressFromCoords(loc.latitude, loc.longitude).then((addr) => {
+          setPickupAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
         });
       } else if (data.type === 'destination_selected') {
-        setDestLocation({
-          latitude: data.latitude,
-          longitude: data.longitude,
+        const loc = { latitude: data.latitude, longitude: data.longitude };
+        setDestLocation(loc);
+        locationService.getAddressFromCoords(loc.latitude, loc.longitude).then((addr) => {
+          setDestAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
         });
       } else if (data.type === 'reset') {
         setPickupLocation(null);
         setDestLocation(null);
+        setPickupAddress('');
+        setDestAddress('');
       }
     } catch (error) {
       console.error('WebView message error:', error);
@@ -230,12 +272,12 @@ const LocationPickerScreen = ({ navigation, route }) => {
     }
 
     // Get addresses from coordinates
-    const pickupAddress = await locationService.getAddressFromCoords(
+    const pickupAddressObj = await locationService.getAddressFromCoords(
       pickupLocation.latitude,
       pickupLocation.longitude
     );
     
-    const destAddress = await locationService.getAddressFromCoords(
+    const destAddressObj = await locationService.getAddressFromCoords(
       destLocation.latitude,
       destLocation.longitude
     );
@@ -244,12 +286,12 @@ const LocationPickerScreen = ({ navigation, route }) => {
       pickup: {
         latitude: pickupLocation.latitude,
         longitude: pickupLocation.longitude,
-        address: pickupAddress?.formatted || `${pickupLocation.latitude.toFixed(4)}, ${pickupLocation.longitude.toFixed(4)}`,
+        address: pickupAddress || pickupAddressObj?.formatted || `${pickupLocation.latitude.toFixed(4)}, ${pickupLocation.longitude.toFixed(4)}`,
       },
       destination: {
         latitude: destLocation.latitude,
         longitude: destLocation.longitude,
-        address: destAddress?.formatted || `${destLocation.latitude.toFixed(4)}, ${destLocation.longitude.toFixed(4)}`,
+        address: destAddress || destAddressObj?.formatted || `${destLocation.latitude.toFixed(4)}, ${destLocation.longitude.toFixed(4)}`,
       },
     };
 
@@ -263,6 +305,20 @@ const LocationPickerScreen = ({ navigation, route }) => {
   const centerOnCurrentLocation = () => {
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript('window.centerOnUser();');
+    }
+  };
+
+  const setCurrentAsNextPoint = () => {
+    if (!currentLocation || !webViewRef.current) return;
+    const { latitude, longitude } = currentLocation;
+    const fn = !pickupLocation ? 'setPickup' : (!destLocation ? 'setDestination' : 'clearMarkers');
+    const js = `window.${fn}(${latitude}, ${longitude});`;
+    webViewRef.current.injectJavaScript(js);
+  };
+
+  const clearAllPoints = () => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript('window.clearMarkers();');
     }
   };
 
@@ -320,16 +376,25 @@ const LocationPickerScreen = ({ navigation, route }) => {
         </Text>
       </View>
 
-      {/* Controls */}
+      {/* Floating Locate Button */}
+      <TouchableOpacity
+        style={styles.locateButton}
+        onPress={centerOnCurrentLocation}
+        activeOpacity={0.8}
+      >
+        <Locate size={24} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Bottom Controls */}
       <View style={styles.controls}>
         {/* Pickup Location Card */}
         {pickupLocation && (
           <View style={styles.locationCard}>
             <View style={[styles.locationMarker, { backgroundColor: '#4CAF50' }]} />
             <View style={styles.locationInfo}>
-              <Text style={styles.locationLabel}>Pickup Location</Text>
-              <Text style={styles.locationCoords}>
-                {pickupLocation.latitude.toFixed(6)}, {pickupLocation.longitude.toFixed(6)}
+              <Text style={styles.locationLabel}>Pickup</Text>
+              <Text style={styles.locationCoords} numberOfLines={2}>
+                {pickupAddress || `${pickupLocation.latitude.toFixed(6)}, ${pickupLocation.longitude.toFixed(6)}`}
               </Text>
             </View>
           </View>
@@ -341,33 +406,48 @@ const LocationPickerScreen = ({ navigation, route }) => {
             <View style={[styles.locationMarker, { backgroundColor: '#F44336' }]} />
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Destination</Text>
-              <Text style={styles.locationCoords}>
-                {destLocation.latitude.toFixed(6)}, {destLocation.longitude.toFixed(6)}
+              <Text style={styles.locationCoords} numberOfLines={2}>
+                {destAddress || `${destLocation.latitude.toFixed(6)}, ${destLocation.longitude.toFixed(6)}`}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Action Buttons */}
+        {/* Secondary Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={styles.locateButton}
-            onPress={centerOnCurrentLocation}
+            style={styles.secondaryButton}
+            onPress={setCurrentAsNextPoint}
+            activeOpacity={0.7}
           >
-            <Locate size={24} color="#fff" />
+            <MapPin size={18} color="#fff" />
+            <Text style={styles.secondaryText}>
+              {!pickupLocation ? 'Use Current' : (!destLocation ? 'Use Current' : 'Reset')}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.confirmButton, (!pickupLocation || !destLocation) && styles.confirmButtonDisabled]}
-            onPress={handleConfirmLocation}
-            disabled={!pickupLocation || !destLocation}
+            style={styles.secondaryButton}
+            onPress={clearAllPoints}
+            activeOpacity={0.7}
           >
-            <Check size={24} color="#fff" />
-            <Text style={styles.confirmButtonText}>
-              Confirm {tripType === 'offer' ? 'Ride' : 'Request'}
-            </Text>
+            <Navigation size={18} color="#fff" />
+            <Text style={styles.secondaryText}>Clear All</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Primary Confirm Button */}
+        <TouchableOpacity
+          style={[styles.confirmButton, (!pickupLocation || !destLocation) && styles.confirmButtonDisabled]}
+          onPress={handleConfirmLocation}
+          disabled={!pickupLocation || !destLocation}
+          activeOpacity={0.9}
+        >
+          <Check size={24} color={(!pickupLocation || !destLocation) ? '#666' : '#000'} />
+          <Text style={[styles.confirmButtonText, (!pickupLocation || !destLocation) && { color: '#666' }]}>
+            Confirm Locations
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -424,37 +504,57 @@ const styles = StyleSheet.create({
   instructionCard: {
     position: 'absolute',
     top: 80,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(26, 26, 26, 0.95)',
-    borderRadius: 12,
-    padding: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   instructionText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   controls: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   locationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(26, 26, 26, 0.95)',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: '#1a1a1a',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 10,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
   locationMarker: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   locationInfo: {
     marginLeft: 12,
@@ -462,44 +562,86 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     color: '#888',
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: 11,
+    marginBottom: 2,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   locationCoords: {
     color: '#fff',
-    fontSize: 14,
-    fontFamily: 'monospace',
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 18,
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
   },
   locateButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(26, 26, 26, 0.95)',
+    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    position: 'absolute',
+    bottom: 200,
+    right: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  confirmButton: {
+  secondaryButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  secondaryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    minHeight: 56,
+    marginTop: 8,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   confirmButtonDisabled: {
-    backgroundColor: '#555',
+    backgroundColor: '#333',
+    shadowOpacity: 0,
   },
   confirmButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8,
+    letterSpacing: 0.5,
   },
 });
 

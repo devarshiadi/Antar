@@ -5,29 +5,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
-  Bell,
   CheckCircle,
   XCircle,
-  MapPin,
   User,
   Car,
   MessageCircle,
   AlertTriangle,
   TrendingUp,
-  Settings,
+  Bell,
 } from 'lucide-react-native';
 
-const { width, height } = Dimensions.get('window');
-
 const NotificationsScreen = ({ navigation }) => {
-  const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', 'matches', 'trips', 'alerts'
-
+  const [selectedFilter] = useState('all'); // Keep the filter state but only use 'all'
   const notifications = [
     {
       id: 1,
@@ -97,15 +91,6 @@ const NotificationsScreen = ({ navigation }) => {
     },
   ];
 
-  const filterNotifications = () => {
-    if (selectedFilter === 'all') return notifications;
-    if (selectedFilter === 'matches') return notifications.filter(n => n.type === 'match');
-    if (selectedFilter === 'trips') return notifications.filter(n => n.type === 'trip');
-    if (selectedFilter === 'alerts') return notifications.filter(n => n.type === 'alert');
-    return notifications;
-  };
-
-  const filteredNotifications = filterNotifications();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const NotificationCard = ({ notification }) => {
@@ -167,110 +152,14 @@ const NotificationsScreen = ({ navigation }) => {
             </View>
           )}
         </View>
-        <TouchableOpacity onPress={() => console.log('Settings')}>
-          <Settings size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-        >
-          <TouchableOpacity 
-            style={[
-              styles.filterChip,
-              selectedFilter === 'all' && styles.filterChipActive
-            ]}
-            onPress={() => setSelectedFilter('all')}
-          >
-            <Bell size={16} color={selectedFilter === 'all' ? '#000' : '#888'} />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'all' && styles.filterChipTextActive
-            ]}>
-              All
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[
-              styles.filterChip,
-              selectedFilter === 'matches' && styles.filterChipActive
-            ]}
-            onPress={() => setSelectedFilter('matches')}
-          >
-            <User size={16} color={selectedFilter === 'matches' ? '#000' : '#888'} />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'matches' && styles.filterChipTextActive
-            ]}>
-              Matches
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[
-              styles.filterChip,
-              selectedFilter === 'trips' && styles.filterChipActive
-            ]}
-            onPress={() => setSelectedFilter('trips')}
-          >
-            <Car size={16} color={selectedFilter === 'trips' ? '#000' : '#888'} />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'trips' && styles.filterChipTextActive
-            ]}>
-              Trips
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[
-              styles.filterChip,
-              selectedFilter === 'alerts' && styles.filterChipActive
-            ]}
-            onPress={() => setSelectedFilter('alerts')}
-          >
-            <AlertTriangle size={16} color={selectedFilter === 'alerts' ? '#000' : '#888'} />
-            <Text style={[
-              styles.filterChipText,
-              selectedFilter === 'alerts' && styles.filterChipTextActive
-            ]}>
-              Alerts
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Notifications List */}
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Mark All Read Button */}
-        {unreadCount > 0 && (
-          <TouchableOpacity style={styles.markAllButton}>
-            <CheckCircle size={18} color="#4CAF50" />
-            <Text style={styles.markAllText}>Mark all as read</Text>
-          </TouchableOpacity>
-        )}
-
-        {filteredNotifications.length > 0 ? (
-          filteredNotifications.map((notification) => (
-            <NotificationCard key={notification.id} notification={notification} />
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Bell size={48} color="#333" />
-            <Text style={styles.emptyText}>No notifications</Text>
-            <Text style={styles.emptySubtext}>You're all caught up!</Text>
-          </View>
-        )}
-
-        <View style={{ height: 20 }} />
+      <ScrollView style={styles.notificationsList}>
+        {notifications.map((notification) => (
+          <NotificationCard key={notification.id} notification={notification} />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -314,51 +203,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  filterContainer: {
-    marginBottom: 15,
-  },
-  filterScroll: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 20,
-    gap: 6,
-  },
-  filterChipActive: {
-    backgroundColor: '#fff',
-  },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#888',
-  },
-  filterChipTextActive: {
-    color: '#000',
-  },
-  content: {
+  notificationsList: {
     flex: 1,
-    paddingHorizontal: 20,
-  },
-  markAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    marginBottom: 15,
-    gap: 8,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4CAF50',
+    padding: 16,
+    backgroundColor: '#000',
   },
   notificationCard: {
     flexDirection: 'row',

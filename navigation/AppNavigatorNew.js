@@ -8,20 +8,22 @@ import LoginScreen from '../components/LoginScreen';
 import RegisterScreen from '../components/RegisterScreen';
 import VerificationScreen from '../components/VerificationScreen';
 
-// Main Screens
-import HomeScreen from '../components/HomeScreen';
+// New Redesigned Screens
+import HomeScreenNew from '../components/HomeScreenNew';
+import MatchesScreenNew from '../components/MatchesScreenNew';
+import NotificationsScreenNew from '../components/NotificationsScreenNew';
+import ProfileScreenNew from '../components/ProfileScreenNew';
+import ChatScreenNew from '../components/ChatScreenNew';
+import TripHistoryScreenNew from '../components/TripHistoryScreenNew';
+
+// Other Screens (keep existing)
 import CreateTripScreen from '../components/CreateTripScreen';
 import LocationPickerScreen from '../components/LocationPickerScreen';
-import MatchesScreen from '../components/MatchesScreen';
-import ProfileScreen from '../components/ProfileScreen';
 import ActiveTripScreen from '../components/ActiveTripScreen';
-import TripHistoryScreen from '../components/TripHistoryScreen';
-import NotificationsScreen from '../components/NotificationsScreen';
-import ChatScreen from '../components/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 
-const AppNavigator = () => {
+function AppNavigatorNew() {
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -29,6 +31,7 @@ const AppNavigator = () => {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#000' },
+          animation: 'slide_from_right',
         }}
       >
         {/* Auth Flow */}
@@ -37,19 +40,21 @@ const AppNavigator = () => {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Verification" component={VerificationScreen} />
 
-        {/* Main App Flow */}
-        <Stack.Screen name="Home" component={HomeScreen} />
+        {/* Main App Flow - New Screens */}
+        <Stack.Screen name="Home" component={HomeScreenNew} />
+        <Stack.Screen name="Matches" component={MatchesScreenNew} />
+        <Stack.Screen name="Notifications" component={NotificationsScreenNew} />
+        <Stack.Screen name="Profile" component={ProfileScreenNew} />
+        <Stack.Screen name="Chat" component={ChatScreenNew} />
+        <Stack.Screen name="TripHistory" component={TripHistoryScreenNew} />
+
+        {/* Other Screens */}
         <Stack.Screen name="CreateTrip" component={CreateTripScreen} />
         <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
-        <Stack.Screen name="Matches" component={MatchesScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
-        <Stack.Screen name="TripHistory" component={TripHistoryScreen} />
-        <Stack.Screen name="Notifications" component={NotificationsScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+}
 
-export default AppNavigator;
+export default AppNavigatorNew;

@@ -107,7 +107,6 @@ const TripHistoryScreen = ({ navigation }) => {
           <Text style={styles.dateText}>{trip.date}</Text>
           <Text style={styles.timeText}>{trip.time}</Text>
         </View>
-        <Text style={styles.fareAmount}>₹{trip.fare}</Text>
       </View>
 
       {/* Route */}
@@ -137,9 +136,12 @@ const TripHistoryScreen = ({ navigation }) => {
             </View>
           </View>
         </View>
-        <View style={styles.distanceInfo}>
-          <MapPin size={14} color="#888" />
-          <Text style={styles.distanceText}>{trip.distance}</Text>
+        <View style={styles.footerRight}>
+          <View style={styles.distanceInfo}>
+            <MapPin size={14} color="#888" />
+            <Text style={styles.distanceText}>{trip.distance}</Text>
+          </View>
+          <Text style={styles.priceAmount}>₹{trip.fare}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -416,9 +418,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
+  },
+  footerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tripPartner: {
+    fontSize: 12,
+    color: '#ccc',
   },
   partnerInfo: {
     flexDirection: 'row',
@@ -455,8 +463,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   distanceText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#888',
+  },
+  priceAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
   emptyState: {
     alignItems: 'center',

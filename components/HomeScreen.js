@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as Location from 'expo-location';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
   Dimensions,
   StatusBar,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -18,13 +20,19 @@ import {
   Clock,
   TrendingUp,
   Menu,
+  Navigation,
 } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
+  const [showLocationPermission, setShowLocationPermission] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
+  const [userCity, setUserCity] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [userRole, setUserRole] = useState('rider'); // 'rider' or 'passenger'
+  const [sourceLocation, setSourceLocation] = useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null)
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -37,10 +45,94 @@ const HomeScreen = ({ navigation }) => {
     });
   };
 
+  useEffect(() => {
+    const checkLocationPermission = async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation(location);
+          
+          // Reverse geocode to get city name
+          const [place] = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+          setUserCity(place.city || 'Unknown City');
+          setShowLocationPermission(false);
+        }
+      } catch (error) {
+        console.log('Error checking location permission:', error);
+      }
+    };
+    
+    checkLocationPermission();
+  }, []);
+
   const handleFindRide = () => {
+    if (sourceLocation && destinationLocation) {
+      navigation.navigate('Matches', { 
+        city: userCity,
+        source: sourceLocation,
+        destination: destinationLocation 
+      });
+    } else {
+      Alert.alert(
+        'Select Locations',
+        'Please select both pickup and destination locations to find a ride.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleSourceSelect = () => {
     navigation.navigate('LocationPicker', {
-      tripType: 'request',
+      tripType: 'find',
+      locationType: 'source',
+      currentLocation: sourceLocation,
+      onLocationSelected: (location) => {
+        setSourceLocation(location);
+      }
     });
+  };
+
+  const handleDestinationSelect = () => {
+    navigation.navigate('LocationPicker', {
+      tripType: 'find',
+      locationType: 'destination',
+      currentLocation: destinationLocation,
+      onLocationSelected: (location) => {
+        setDestinationLocation(location);
+      }
+    });
+  };
+  
+  const handleAllowLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation(location);
+        
+        // Reverse geocode to get city name
+        const [place] = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        setUserCity(place.city || 'Unknown City');
+        setShowLocationPermission(false);
+      } else {
+        console.log('Location permission denied');
+        setShowLocationPermission(false);
+      }
+    } catch (error) {
+      console.log('Error requesting location permission:', error);
+      setShowLocationPermission(false);
+    }
+  };
+  
+  const handleDenyLocation = () => {
+    setShowLocationPermission(false);
   };
 
   const stats = {
@@ -90,6 +182,46 @@ const HomeScreen = ({ navigation }) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
         }
       >
+        {/* Source & Destination Selector */}
+        <View style={styles.locationSelector}>
+          <Text style={styles.locationSelectorTitle}>Where are you going?</Text>
+          
+          {/* Source Input */}
+          <TouchableOpacity 
+            style={styles.locationInput}
+            onPress={handleSourceSelect}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.locationDot, styles.locationDotSource]} />
+            <View style={styles.locationInputContent}>
+              <Text style={styles.locationLabel}>Pickup Location</Text>
+              <Text style={styles.locationValue}>
+                {sourceLocation ? sourceLocation.address : 'Select pickup point'}
+              </Text>
+            </View>
+            <Navigation size={20} color="#4CAF50" />
+          </TouchableOpacity>
+
+          {/* Divider Line */}
+          <View style={styles.locationDivider} />
+
+          {/* Destination Input */}
+          <TouchableOpacity 
+            style={styles.locationInput}
+            onPress={handleDestinationSelect}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.locationDot, styles.locationDotDestination]} />
+            <View style={styles.locationInputContent}>
+              <Text style={styles.locationLabel}>Destination</Text>
+              <Text style={styles.locationValue}>
+                {destinationLocation ? destinationLocation.address : 'Select destination'}
+              </Text>
+            </View>
+            <MapPin size={20} color="#F44336" />
+          </TouchableOpacity>
+        </View>
+
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity 
@@ -130,55 +262,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Live Map Button */}
-        <TouchableOpacity 
-          style={styles.mapButton}
-          onPress={() => navigation.navigate('Map')}
-        >
-          <MapPin size={24} color="#fff" />
-          <View style={styles.mapButtonContent}>
-            <Text style={styles.mapButtonTitle}>View Live Map</Text>
-            <Text style={styles.mapButtonSubtitle}>Track riders & passengers nearby</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Role Toggle */}
-        <View style={styles.roleSection}>
-          <Text style={styles.sectionTitle}>I want to be a</Text>
-          <View style={styles.roleToggle}>
-            <TouchableOpacity 
-              style={[
-                styles.roleButton,
-                userRole === 'rider' && styles.roleButtonActive
-              ]}
-              onPress={() => setUserRole('rider')}
-            >
-              <Car size={22} color={userRole === 'rider' ? '#000' : '#fff'} />
-              <Text style={[
-                styles.roleButtonText,
-                userRole === 'rider' && styles.roleButtonTextActive
-              ]}>
-                Rider
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[
-                styles.roleButton,
-                userRole === 'passenger' && styles.roleButtonActive
-              ]}
-              onPress={() => setUserRole('passenger')}
-            >
-              <User size={22} color={userRole === 'passenger' ? '#000' : '#fff'} />
-              <Text style={[
-                styles.roleButtonText,
-                userRole === 'passenger' && styles.roleButtonTextActive
-              ]}>
-                Passenger
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
         {/* Recent Trips */}
         <View style={styles.recentSection}>
@@ -205,28 +288,95 @@ const HomeScreen = ({ navigation }) => {
           ))}
         </View>
 
-        {/* Active Matches */}
-        <View style={styles.matchesSection}>
-          <Text style={styles.sectionTitle}>Active Matches</Text>
-          <TouchableOpacity 
-            style={styles.matchesCard}
-            onPress={() => navigation.navigate('Matches')}
-          >
-            <View style={styles.matchesContent}>
-              <Text style={styles.matchesText}>You have 2 active matches</Text>
-              <Text style={styles.matchesSubtext}>Tap to view details</Text>
-            </View>
-            <View style={styles.matchesBadge}>
-              <Text style={styles.matchesBadgeText}>2</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
+
+      {/* Location Permission Popup */}
+      {showLocationPermission && (
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.popupTitle}>Enable Location Services</Text>
+            <Text style={styles.popupText}>
+              To find the best ride matches in your area, we need access to your location.
+            </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.popupButton, styles.cancelButton]} 
+                onPress={handleDenyLocation}
+              >
+                <Text style={styles.cancelButtonText}>Not Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.popupButton, styles.allowButton]} 
+                onPress={handleAllowLocation}
+              >
+                <Text style={styles.allowButtonText}>Allow</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  // Popup Styles
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  popup: {
+    width: '85%',
+    backgroundColor: '#1e1e1e',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  popupTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  popupText: {
+    color: '#aaa',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  popupButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 6,
+  },
+  allowButton: {
+    backgroundColor: '#4CAF50',
+  },
+  cancelButton: {
+    backgroundColor: '#333',
+  },
+  allowButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -478,6 +628,58 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  // Location Selector Styles
+  locationSelector: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  locationSelectorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  locationInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    minHeight: 56, // Thumb-friendly touch target
+  },
+  locationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  locationDotSource: {
+    backgroundColor: '#4CAF50',
+  },
+  locationDotDestination: {
+    backgroundColor: '#F44336',
+  },
+  locationInputContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  locationValue: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  locationDivider: {
+    height: 1,
+    backgroundColor: '#2a2a2a',
+    marginLeft: 24,
+    marginVertical: 4,
   },
 });
 

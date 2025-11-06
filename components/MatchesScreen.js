@@ -25,77 +25,93 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
-const MatchesScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('available'); // 'available', 'pending', 'accepted'
+const MatchesScreen = ({ navigation, route }) => {
+  const { city } = route.params || {};
+  // Sample data with city information and status
+  const allRiders = [
+    {
+      id: 1,
+      user: { name: 'Rajesh Kumar', rating: 4.8, trips: 45, avatar: null },
+      route: { from: 'MG Road', to: 'Whitefield', city: 'Bangalore' },
+      matchScore: 95,
+      time: '8:30 AM',
+      price: 120,
+      seats: 2,
+      distance: '12 km',
+      type: 'rider',
+      requestStatus: 'available', // 'available', 'pending', 'accepted'
+    },
+    {
+      id: 2,
+      user: { name: 'Priya Sharma', rating: 4.9, trips: 67, avatar: null },
+      route: { from: 'Koramangala', to: 'Electronic City', city: 'Bangalore' },
+      matchScore: 88,
+      time: '9:00 AM',
+      price: 80,
+      seats: 1,
+      distance: '8 km',
+      type: 'rider',
+      requestStatus: 'available',
+    },
+    {
+      id: 3,
+      user: { name: 'Amit Patel', rating: 4.7, trips: 32, avatar: null },
+      route: { from: 'Marine Drive', to: 'Bandra', city: 'Mumbai' },
+      matchScore: 92,
+      time: '9:30 AM',
+      price: 200,
+      seats: 2,
+      distance: '15 km',
+      type: 'rider',
+      requestStatus: 'available',
+    },
+    {
+      id: 4,
+      user: { name: 'Suresh Singh', rating: 4.6, trips: 28, avatar: null },
+      route: { from: 'Indiranagar', to: 'HSR Layout', city: 'Bangalore' },
+      matchScore: 82,
+      time: '7:45 AM',
+      price: 100,
+      seats: 1,
+      distance: '6 km',
+      type: 'rider',
+      requestStatus: 'pending',
+    },
+    {
+      id: 5,
+      user: { name: 'Sneha Reddy', rating: 5.0, trips: 89, avatar: null },
+      route: { from: 'Marathahalli', to: 'Bellandur', city: 'Bangalore' },
+      matchScore: 92,
+      time: '8:15 AM',
+      price: 60,
+      seats: 1,
+      distance: '4 km',
+      type: 'rider',
+      requestStatus: 'accepted',
+    },
+  ];
 
-  const matches = {
-    available: [
-      {
-        id: 1,
-        user: { name: 'Rajesh Kumar', rating: 4.8, trips: 45, avatar: null },
-        route: { from: 'MG Road', to: 'Whitefield' },
-        matchScore: 95,
-        time: '8:30 AM',
-        price: 120,
-        seats: 2,
-        distance: '12 km',
-        type: 'rider',
-      },
-      {
-        id: 2,
-        user: { name: 'Priya Sharma', rating: 4.9, trips: 67, avatar: null },
-        route: { from: 'Koramangala', to: 'Electronic City' },
-        matchScore: 88,
-        time: '9:00 AM',
-        price: 80,
-        seats: 1,
-        distance: '8 km',
-        type: 'rider',
-      },
-    ],
-    pending: [
-      {
-        id: 3,
-        user: { name: 'Amit Patel', rating: 4.7, trips: 32, avatar: null },
-        route: { from: 'Indiranagar', to: 'HSR Layout' },
-        matchScore: 82,
-        time: '7:45 AM',
-        price: 100,
-        seats: 1,
-        distance: '6 km',
-        type: 'passenger',
-        status: 'Waiting for response',
-      },
-    ],
-    accepted: [
-      {
-        id: 4,
-        user: { name: 'Sneha Reddy', rating: 5.0, trips: 89, avatar: null },
-        route: { from: 'Marathahalli', to: 'Bellandur' },
-        matchScore: 92,
-        time: '8:15 AM',
-        price: 60,
-        seats: 1,
-        distance: '4 km',
-        type: 'rider',
-        status: 'Trip confirmed',
-      },
-    ],
+  // Filter riders by city if city is provided
+  const allMatches = city 
+    ? allRiders.filter(rider => 
+        rider.route.city.toLowerCase() === city.toLowerCase()
+      )
+    : allRiders;
+
+  const handleRequestRide = (matchId) => {
+    console.log('Requested ride:', matchId);
+    // Handle ride request logic here
+    // You can navigate to trip details or show confirmation
   };
 
-  const handleAccept = (matchId) => {
-    console.log('Accepted match:', matchId);
-    // Show confirmation and navigate to trip details
-  };
-
-  const handleReject = (matchId) => {
-    console.log('Rejected match:', matchId);
+  const handleChatPress = (matchId) => {
+    navigation.navigate('Chat', { matchId });
   };
 
   const MatchCard = ({ match }) => {
-    const isAvailable = activeTab === 'available';
-    const isPending = activeTab === 'pending';
-    const isAccepted = activeTab === 'accepted';
+    const isAvailable = match.requestStatus === 'available';
+    const isPending = match.requestStatus === 'pending';
+    const isAccepted = match.requestStatus === 'accepted';
 
     return (
       <View style={styles.matchCard}>
@@ -103,6 +119,19 @@ const MatchesScreen = ({ navigation }) => {
         <View style={styles.matchScoreBadge}>
           <Text style={styles.matchScoreText}>{match.matchScore}%</Text>
         </View>
+        
+        {/* Status Badge */}
+        {(isPending || isAccepted) && (
+          <View style={[
+            styles.statusBadge,
+            isPending && styles.pendingBadge,
+            isAccepted && styles.acceptedBadge
+          ]}>
+            <Text style={styles.statusBadgeText}>
+              {isPending ? 'Pending' : 'Accepted'}
+            </Text>
+          </View>
+        )}
 
         {/* User Info */}
         <View style={styles.userSection}>
@@ -159,48 +188,55 @@ const MatchesScreen = ({ navigation }) => {
 
         {/* Status or Actions */}
         {isAvailable && (
-          <View style={styles.actionsSection}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.rejectButton]}
-              onPress={() => handleReject(match.id)}
-            >
-              <XCircle size={20} color="#fff" />
-              <Text style={styles.rejectButtonText}>Reject</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.acceptButton]}
-              onPress={() => handleAccept(match.id)}
-            >
-              <CheckCircle size={20} color="#fff" />
-              <Text style={styles.acceptButtonText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={styles.requestRideButton}
+            onPress={() => handleRequestRide(match.id)}
+          >
+            <Car size={20} color="#fff" />
+            <Text style={styles.requestRideButtonText}>Request for Ride</Text>
+          </TouchableOpacity>
         )}
 
         {isPending && (
-          <View style={styles.statusSection}>
-            <Text style={styles.statusText}>{match.status}</Text>
+          <View style={styles.pendingSection}>
+            <Clock size={18} color="#FFC107" />
+            <Text style={styles.pendingText}>Waiting for rider's response</Text>
           </View>
         )}
 
         {isAccepted && (
-          <View style={styles.actionsSection}>
-            <TouchableOpacity style={[styles.actionButton, styles.chatButton]}>
-              <MessageCircle size={20} color="#fff" />
-              <Text style={styles.chatButtonText}>Chat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.viewButton]}>
-              <Text style={styles.viewButtonText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={styles.chatButton}
+            onPress={() => handleChatPress(match.id)}
+          >
+            <MessageCircle size={20} color="#fff" />
+            <Text style={styles.chatButtonText}>Chat with Rider</Text>
+          </TouchableOpacity>
         )}
       </View>
     );
   };
 
+  // Show message if no riders found in the city
+  if (city && allMatches.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <Text style={styles.noRidersText}>No riders available in {city} yet.</Text>
+        <Text style={styles.noRidersSubtext}>Please check back later or try a different location.</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
+      {city && (
+        <View style={styles.cityHeader}>
+          <MapPin size={18} color="#4CAF50" />
+          <Text style={styles.cityText}>Showing riders in {city}</Text>
+        </View>
+      )}
       
       {/* Header */}
       <View style={styles.header}>
@@ -214,41 +250,13 @@ const MatchesScreen = ({ navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'available' && styles.activeTab]}
-          onPress={() => setActiveTab('available')}
-        >
-          <Text style={[styles.tabText, activeTab === 'available' && styles.activeTabText]}>
-            Available ({matches.available.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            Pending ({matches.pending.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'accepted' && styles.activeTab]}
-          onPress={() => setActiveTab('accepted')}
-        >
-          <Text style={[styles.tabText, activeTab === 'accepted' && styles.activeTabText]}>
-            Accepted ({matches.accepted.length})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Matches List */}
+      {/* All Matches List */}
       <ScrollView 
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {matches[activeTab].length > 0 ? (
-          matches[activeTab].map((match) => (
+        {allMatches.length > 0 ? (
+          allMatches.map((match) => (
             <MatchCard key={match.id} match={match} />
           ))
         ) : (
@@ -265,9 +273,40 @@ const MatchesScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  cityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    backgroundColor: '#1a1a1a',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2a2a2a',
+  },
+  cityText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  noRidersText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    paddingHorizontal: 30,
+  },
+  noRidersSubtext: {
+    color: '#aaa',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 30,
+    lineHeight: 20,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
@@ -284,78 +323,105 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 15,
-    gap: 10,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-  },
-  activeTab: {
-    backgroundColor: '#fff',
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#888',
-  },
-  activeTabText: {
-    color: '#000',
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   matchCard: {
     backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 15,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
   matchScoreBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 16,
+    right: 16,
     backgroundColor: '#4CAF50',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   matchScoreText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#fff',
+    letterSpacing: 0.5,
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  pendingBadge: {
+    backgroundColor: '#FFB300',
+    shadowColor: '#FFB300',
+  },
+  acceptedBadge: {
+    backgroundColor: '#00C853',
+    shadowColor: '#00C853',
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   userSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 18,
     paddingRight: 60,
+    marginTop: 8,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#333',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    borderWidth: 2,
+    borderColor: '#3a3a3a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   userMeta: {
     flexDirection: 'row',
@@ -374,10 +440,15 @@ const styles = StyleSheet.create({
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   riderBadge: {
     backgroundColor: '#2196F3',
@@ -391,7 +462,12 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   routeSection: {
-    marginBottom: 15,
+    marginBottom: 18,
+    backgroundColor: '#252525',
+    padding: 14,
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
   },
   routeItem: {
     flexDirection: 'row',
@@ -400,9 +476,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   routeText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   routeDivider: {
     width: 2,
@@ -414,8 +491,11 @@ const styles = StyleSheet.create({
   detailsSection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 15,
-    marginBottom: 15,
+    gap: 12,
+    marginBottom: 16,
+    backgroundColor: '#252525',
+    padding: 12,
+    borderRadius: 12,
   },
   detailItem: {
     flexDirection: 'row',
@@ -427,9 +507,10 @@ const styles = StyleSheet.create({
     color: '#ccc',
   },
   priceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#4CAF50',
+    letterSpacing: 0.5,
   },
   actionsSection: {
     flexDirection: 'row',
@@ -461,12 +542,43 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
     backgroundColor: '#2196F3',
+    gap: 10,
+    marginTop: 8,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   chatButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  pendingSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 179, 0, 0.15)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 0, 0.3)',
+  },
+  pendingText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFB300',
+    letterSpacing: 0.3,
   },
   viewButton: {
     backgroundColor: '#fff',
@@ -476,14 +588,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  statusSection: {
-    paddingVertical: 10,
+  requestRideButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#4CAF50',
+    gap: 10,
+    marginTop: 8,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  statusText: {
-    fontSize: 14,
-    color: '#FFC107',
-    fontWeight: '600',
+  requestRideButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   emptyState: {
     alignItems: 'center',
