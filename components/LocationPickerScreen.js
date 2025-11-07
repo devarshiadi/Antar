@@ -195,7 +195,7 @@ const LocationPickerScreen = ({ navigation, route }) => {
   const [pickupAddress, setPickupAddress] = useState('');
   const [destAddress, setDestAddress] = useState('');
 
-  const { tripType = 'offer' } = route.params || {};
+  const { tripType = 'offer', locationType, onLocationSelected, returnScreen } = route.params || {};
 
   useEffect(() => {
     initializeLocation();
@@ -266,12 +266,45 @@ const LocationPickerScreen = ({ navigation, route }) => {
   };
 
   const handleConfirmLocation = async () => {
+    if (locationType) {
+      const selectedLocation = pickupLocation || destLocation;
+      const selectedAddress = pickupAddress || destAddress;
+      
+      if (!selectedLocation) {
+        Alert.alert('Error', `Please select ${locationType === 'source' ? 'pickup' : 'destination'} location`);
+        return;
+      }
+
+      const addressObj = await locationService.getAddressFromCoords(
+        selectedLocation.latitude,
+        selectedLocation.longitude
+      );
+
+      const locationData = {
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        address: selectedAddress || addressObj?.formatted || `${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)}`,
+      };
+
+      if (onLocationSelected) {
+        onLocationSelected(locationData);
+        navigation.goBack();
+      } else if (returnScreen) {
+        navigation.navigate(returnScreen, {
+          selectedLocation: locationData,
+          locationType: locationType,
+        });
+      } else {
+        navigation.goBack();
+      }
+      return;
+    }
+
     if (!pickupLocation || !destLocation) {
       Alert.alert('Error', 'Please select both pickup and destination locations');
       return;
     }
 
-    // Get addresses from coordinates
     const pickupAddressObj = await locationService.getAddressFromCoords(
       pickupLocation.latitude,
       pickupLocation.longitude
@@ -295,7 +328,6 @@ const LocationPickerScreen = ({ navigation, route }) => {
       },
     };
 
-    // Navigate to Matches with location data
     navigation.navigate('Matches', {
       tripType,
       locations: locationsData,
@@ -370,7 +402,9 @@ const LocationPickerScreen = ({ navigation, route }) => {
       {/* Instruction Card */}
       <View style={styles.instructionCard}>
         <Text style={styles.instructionText}>
-          {!pickupLocation ? '📍 Tap to set pickup location' : 
+          {locationType === 'source' ? '📍 Tap to set pickup location' :
+           locationType === 'destination' ? '🎯 Tap to set destination' :
+           !pickupLocation ? '📍 Tap to set pickup location' : 
            !destLocation ? '🎯 Tap to set destination' : 
            '✅ Both locations set. Tap again to reset'}
         </Text>
@@ -438,14 +472,14 @@ const LocationPickerScreen = ({ navigation, route }) => {
 
         {/* Primary Confirm Button */}
         <TouchableOpacity
-          style={[styles.confirmButton, (!pickupLocation || !destLocation) && styles.confirmButtonDisabled]}
+          style={[styles.confirmButton, (locationType ? !pickupLocation : (!pickupLocation || !destLocation)) && styles.confirmButtonDisabled]}
           onPress={handleConfirmLocation}
-          disabled={!pickupLocation || !destLocation}
+          disabled={locationType ? !pickupLocation : (!pickupLocation || !destLocation)}
           activeOpacity={0.9}
         >
-          <Check size={24} color={(!pickupLocation || !destLocation) ? '#666' : '#000'} />
-          <Text style={[styles.confirmButtonText, (!pickupLocation || !destLocation) && { color: '#666' }]}>
-            Confirm Locations
+          <Check size={24} color={(locationType ? !pickupLocation : (!pickupLocation || !destLocation)) ? '#666' : '#000'} />
+          <Text style={[styles.confirmButtonText, (locationType ? !pickupLocation : (!pickupLocation || !destLocation)) && { color: '#666' }]}>
+            {locationType ? 'Confirm Location' : 'Confirm Locations'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -25,26 +25,41 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  return distance;
+};
+
 const MatchesScreen = ({ navigation, route }) => {
-  const { city } = route.params || {};
+  const { city, tripType, userLocation } = route.params || {};
   // Sample data with city information and status
   const allRiders = [
     {
       id: 1,
       user: { name: 'Rajesh Kumar', rating: 4.8, trips: 45, avatar: null },
       route: { from: 'MG Road', to: 'Whitefield', city: 'Bangalore' },
+      location: { latitude: 12.9716, longitude: 77.5946 },
       matchScore: 95,
       time: '8:30 AM',
       price: 120,
       seats: 2,
       distance: '12 km',
       type: 'rider',
-      requestStatus: 'available', // 'available', 'pending', 'accepted'
+      requestStatus: 'available',
     },
     {
       id: 2,
       user: { name: 'Priya Sharma', rating: 4.9, trips: 67, avatar: null },
       route: { from: 'Koramangala', to: 'Electronic City', city: 'Bangalore' },
+      location: { latitude: 12.9352, longitude: 77.6245 },
       matchScore: 88,
       time: '9:00 AM',
       price: 80,
@@ -57,6 +72,7 @@ const MatchesScreen = ({ navigation, route }) => {
       id: 3,
       user: { name: 'Amit Patel', rating: 4.7, trips: 32, avatar: null },
       route: { from: 'Marine Drive', to: 'Bandra', city: 'Mumbai' },
+      location: { latitude: 18.9432, longitude: 72.8236 },
       matchScore: 92,
       time: '9:30 AM',
       price: 200,
@@ -69,6 +85,7 @@ const MatchesScreen = ({ navigation, route }) => {
       id: 4,
       user: { name: 'Suresh Singh', rating: 4.6, trips: 28, avatar: null },
       route: { from: 'Indiranagar', to: 'HSR Layout', city: 'Bangalore' },
+      location: { latitude: 12.9719, longitude: 77.6412 },
       matchScore: 82,
       time: '7:45 AM',
       price: 100,
@@ -81,6 +98,7 @@ const MatchesScreen = ({ navigation, route }) => {
       id: 5,
       user: { name: 'Sneha Reddy', rating: 5.0, trips: 89, avatar: null },
       route: { from: 'Marathahalli', to: 'Bellandur', city: 'Bangalore' },
+      location: { latitude: 12.9591, longitude: 77.6974 },
       matchScore: 92,
       time: '8:15 AM',
       price: 60,
@@ -91,12 +109,29 @@ const MatchesScreen = ({ navigation, route }) => {
     },
   ];
 
-  // Filter riders by city if city is provided
-  const allMatches = city 
-    ? allRiders.filter(rider => 
-        rider.route.city.toLowerCase() === city.toLowerCase()
-      )
-    : allRiders;
+  let allMatches = allRiders;
+
+  if (tripType === 'find' && userLocation) {
+    const MAX_DISTANCE_KM = 20;
+    allMatches = allRiders
+      .map(rider => {
+        const distanceFromUser = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          rider.location.latitude,
+          rider.location.longitude
+        );
+        return { ...rider, distanceFromUser };
+      })
+      .filter(rider => rider.distanceFromUser <= MAX_DISTANCE_KM)
+      .sort((a, b) => a.distanceFromUser - b.distanceFromUser);
+  } else if (city) {
+    allMatches = allRiders.filter(rider => 
+      rider.route.city.toLowerCase() === city.toLowerCase()
+    );
+  }
+
+  const pageTitle = tripType === 'find' ? 'Available Drivers' : tripType === 'offer' ? 'Ride Posted' : 'Matches';
 
   const handleRequestRide = (matchId) => {
     console.log('Requested ride:', matchId);
@@ -171,6 +206,14 @@ const MatchesScreen = ({ navigation, route }) => {
             <Clock size={16} color="#888" />
             <Text style={styles.detailText}>{match.time}</Text>
           </View>
+          {match.distanceFromUser && (
+            <View style={styles.detailItem}>
+              <MapPin size={16} color="#4CAF50" />
+              <Text style={[styles.detailText, { color: '#4CAF50', fontWeight: '600' }]}>
+                {match.distanceFromUser.toFixed(1)} km away
+              </Text>
+            </View>
+          )}
           <View style={styles.detailItem}>
             <MapPin size={16} color="#888" />
             <Text style={styles.detailText}>{match.distance}</Text>
@@ -231,10 +274,22 @@ const MatchesScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
-      {city && (
+      {tripType === 'find' && (
         <View style={styles.cityHeader}>
           <MapPin size={18} color="#4CAF50" />
-          <Text style={styles.cityText}>Showing riders in {city}</Text>
+          <Text style={styles.cityText}>
+            {userLocation 
+              ? `Showing drivers within 20 km ${city ? `in ${city}` : 'of your location'}`
+              : (city ? `Showing drivers in ${city}` : 'Showing all available drivers')
+            }
+          </Text>
+        </View>
+      )}
+      
+      {tripType === 'offer' && (
+        <View style={[styles.cityHeader, { backgroundColor: '#1a4d1a' }]}>
+          <CheckCircle size={18} color="#4CAF50" />
+          <Text style={styles.cityText}>Your ride has been posted successfully!</Text>
         </View>
       )}
       
@@ -246,7 +301,7 @@ const MatchesScreen = ({ navigation, route }) => {
         >
           <ArrowLeft size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Matches</Text>
+        <Text style={styles.headerTitle}>{pageTitle}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -261,8 +316,18 @@ const MatchesScreen = ({ navigation, route }) => {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No matches found</Text>
-            <Text style={styles.emptySubtext}>Check back later for new matches</Text>
+            <Text style={styles.emptyText}>
+              {tripType === 'find' && userLocation 
+                ? 'No drivers found within 20 km'
+                : 'No matches found'
+              }
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {tripType === 'find' && userLocation 
+                ? 'Try again later or expand your search radius'
+                : 'Check back later for new matches'
+              }
+            </Text>
           </View>
         )}
 

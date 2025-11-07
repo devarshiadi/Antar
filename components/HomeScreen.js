@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import {
   View,
@@ -25,7 +26,7 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, route }) => {
   const [showLocationPermission, setShowLocationPermission] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [userCity, setUserCity] = useState('');
@@ -40,9 +41,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleOfferRide = () => {
-    navigation.navigate('LocationPicker', {
-      tripType: 'offer',
-    });
+    navigation.navigate('OfferRide');
   };
 
   useEffect(() => {
@@ -69,30 +68,80 @@ const HomeScreen = ({ navigation }) => {
     checkLocationPermission();
   }, []);
 
-  const handleFindRide = () => {
-    if (sourceLocation && destinationLocation) {
-      navigation.navigate('Matches', { 
-        city: userCity,
-        source: sourceLocation,
-        destination: destinationLocation 
-      });
-    } else {
-      Alert.alert(
-        'Select Locations',
-        'Please select both pickup and destination locations to find a ride.',
-        [{ text: 'OK' }]
-      );
+  const handleFindRide = async () => {
+    if (!userLocation) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation(location);
+        
+        const [place] = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        setUserCity(place.city || 'Unknown City');
+        setShowLocationPermission(false);
+        
+        navigation.navigate('Matches', { 
+          tripType: 'find',
+          city: place.city || null,
+          userLocation: {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          },
+          source: sourceLocation,
+          destination: destinationLocation,
+        });
+      } else {
+        Alert.alert(
+          'Location Required',
+          'Please enable location to find nearby drivers. You can still browse all drivers.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Browse All', 
+              onPress: () => navigation.navigate('Matches', { 
+                tripType: 'find',
+                city: null,
+                userLocation: null,
+                source: sourceLocation,
+                destination: destinationLocation,
+              })
+            }
+          ]
+        );
+      }
+      return;
     }
+
+    navigation.navigate('Matches', { 
+      tripType: 'find',
+      city: userCity || null,
+      userLocation: {
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+      },
+      source: sourceLocation,
+      destination: destinationLocation,
+    });
   };
+
+  useEffect(() => {
+    if (route.params?.selectedLocation && route.params?.locationType) {
+      if (route.params.locationType === 'source') {
+        setSourceLocation(route.params.selectedLocation);
+      } else if (route.params.locationType === 'destination') {
+        setDestinationLocation(route.params.selectedLocation);
+      }
+      navigation.setParams({ selectedLocation: undefined, locationType: undefined });
+    }
+  }, [route.params?.selectedLocation]);
 
   const handleSourceSelect = () => {
     navigation.navigate('LocationPicker', {
       tripType: 'find',
       locationType: 'source',
-      currentLocation: sourceLocation,
-      onLocationSelected: (location) => {
-        setSourceLocation(location);
-      }
+      returnScreen: 'Home',
     });
   };
 
@@ -100,10 +149,7 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('LocationPicker', {
       tripType: 'find',
       locationType: 'destination',
-      currentLocation: destinationLocation,
-      onLocationSelected: (location) => {
-        setDestinationLocation(location);
-      }
+      returnScreen: 'Home',
     });
   };
   

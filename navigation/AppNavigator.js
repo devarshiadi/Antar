@@ -18,6 +18,7 @@ import ActiveTripScreen from '../components/ActiveTripScreen';
 import TripHistoryScreen from '../components/TripHistoryScreen';
 import NotificationsScreen from '../components/NotificationsScreen';
 import ChatScreen from '../components/ChatScreen';
+import OfferRideScreen from '../components/OfferRideScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +42,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="CreateTrip" component={CreateTripScreen} />
         <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
+        <Stack.Screen name="OfferRide" component={OfferRideScreen} />
         <Stack.Screen name="Matches" component={MatchesScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
