@@ -9,17 +9,18 @@ import RegisterScreen from '../components/RegisterScreen';
 import VerificationScreen from '../components/VerificationScreen';
 
 // New Redesigned Screens
-import HomeScreenNew from '../components/HomeScreenNew';
-import MatchesScreenNew from '../components/MatchesScreenNew';
+import HomeScreenNew from '../components/home/home-screen';
+import MatchesScreenNew from '../components/matches/matches-screen';
 import NotificationsScreenNew from '../components/NotificationsScreenNew';
 import ProfileScreenNew from '../components/ProfileScreenNew';
 import ChatScreenNew from '../components/ChatScreenNew';
-import TripHistoryScreenNew from '../components/TripHistoryScreenNew';
+import TripHistoryScreenNew from '../components/trips/trip-history-screen';
 
 // Other Screens (keep existing)
 import CreateTripScreen from '../components/CreateTripScreen';
-import LocationPickerScreen from '../components/LocationPickerScreen';
-import ActiveTripScreen from '../components/ActiveTripScreen';
+import LocationPickerScreen from '../components/trips/location-picker-screen';
+import ActiveTripScreen from '../components/trips/active-trip-screen';
+import OfferRideScreen from '../components/trips/offer-ride-screen';
 
 const Stack = createNativeStackNavigator();
 
@@ -52,6 +53,7 @@ function AppNavigatorNew() {
         <Stack.Screen name="CreateTrip" component={CreateTripScreen} />
         <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
         <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
+        <Stack.Screen name="OfferRide" component={OfferRideScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

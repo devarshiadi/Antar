@@ -1,11 +1,12 @@
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import AppNavigator from './navigation/AppNavigator';
+import AppNavigatorNew from './navigation/AppNavigatorNew';
 
 export default function App() {
   return (
-    <>
+    <React.StrictMode>
       <StatusBar style="light" />
-      <AppNavigator />
-    </>
+      <AppNavigatorNew />
+    </React.StrictMode>
   );
 }

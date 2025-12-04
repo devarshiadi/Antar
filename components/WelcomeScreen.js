@@ -6,7 +6,7 @@ const { width, height } = Dimensions.get('window');
 
 const onboardingData = [
   {
-    image: require('../assets/scooter.gif'), // Placeholder for map image
+    image: require('../assets/scooter1.gif'), // Placeholder for map image
     title: 'Find Your Way, Faster',
     subtitle: 'Allow location access for realme navigation.',
   },
@@ -16,7 +16,7 @@ const onboardingData = [
     subtitle: 'Meet other riders and plan long journeys together.',
   },
   {
-    image: require('../assets/scooter.gif'), // Original scooter image
+    image: require('../assets/scooter1.gif'), // Original scooter image
     title: 'Unlock Endless Possibilities',
     subtitle: 'Start your journey with Antar today!',
   },

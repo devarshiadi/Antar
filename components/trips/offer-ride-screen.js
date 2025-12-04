@@ -24,7 +24,7 @@ import {
 
 const STORAGE_KEY = '@offer_ride_user_data';
 
-const OfferRideScreen = ({ navigation, route }) => {
+export function OfferRideScreen({ navigation, route }) {
   const [vehicleType, setVehicleType] = useState('car');
   const [seatCount, setSeatCount] = useState(2);
   const [sourceLocation, setSourceLocation] = useState(null);
@@ -49,7 +49,7 @@ const OfferRideScreen = ({ navigation, route }) => {
     }
   }, [route.params?.selectedLocation]);
 
-  const loadUserData = async () => {
+  async function loadUserData() {
     try {
       const savedData = await AsyncStorage.getItem(STORAGE_KEY);
       if (savedData) {
@@ -69,9 +69,9 @@ const OfferRideScreen = ({ navigation, route }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const saveUserData = async () => {
+  async function saveUserData() {
     try {
       const dataToSave = {
         userName,
@@ -84,40 +84,42 @@ const OfferRideScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error saving user data:', error);
     }
-  };
+  }
 
-  const handleVehicleChange = (type) => {
+  function handleVehicleChange(type) {
     setVehicleType(type);
     if (type === 'bike') {
       setSeatCount(1);
     } else if (seatCount === 1) {
       setSeatCount(2);
     }
-  };
+  }
 
-  const handleSourceSelect = () => {
+  function handleSourceSelect() {
     navigation.navigate('LocationPicker', {
       tripType: 'offer',
       locationType: 'source',
       returnScreen: 'OfferRide',
     });
-  };
+  }
 
-  const handleDestinationSelect = () => {
+  function handleDestinationSelect() {
     navigation.navigate('LocationPicker', {
       tripType: 'offer',
       locationType: 'destination',
       returnScreen: 'OfferRide',
     });
-  };
+  }
 
-  const handleConfirm = async () => {
+  async function handleConfirm() {
     if (!userName.trim()) {
       Alert.alert('Missing Information', 'Please enter your name.', [{ text: 'OK' }]);
       return;
     }
     if (!phoneNumber.trim() || phoneNumber.length < 10) {
-      Alert.alert('Missing Information', 'Please enter a valid phone number (at least 10 digits).', [{ text: 'OK' }]);
+      Alert.alert('Missing Information', 'Please enter a valid phone number (at least 10 digits).', [
+        { text: 'OK' },
+      ]);
       return;
     }
     if (!vehicleNumber.trim()) {
@@ -125,7 +127,9 @@ const OfferRideScreen = ({ navigation, route }) => {
       return;
     }
     if (!sourceLocation || !destinationLocation) {
-      Alert.alert('Missing Information', 'Please select both pickup and destination locations.', [{ text: 'OK' }]);
+      Alert.alert('Missing Information', 'Please select both pickup and destination locations.', [
+        { text: 'OK' },
+      ]);
       return;
     }
 
@@ -143,7 +147,7 @@ const OfferRideScreen = ({ navigation, route }) => {
         vehicleNumber,
       },
     });
-  };
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -343,7 +347,7 @@ const OfferRideScreen = ({ navigation, route }) => {
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

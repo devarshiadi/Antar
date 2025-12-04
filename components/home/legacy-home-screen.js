@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import {
@@ -199,7 +199,7 @@ const HomeScreen = ({ navigation, route }) => {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello 👋</Text>
+          <Text style={styles.greeting}>Hello ≡ƒæï</Text>
           <Text style={styles.userName}>Devendra</Text>
         </View>
         <View style={styles.headerIcons}>
@@ -303,7 +303,7 @@ const HomeScreen = ({ navigation, route }) => {
           </View>
           <View style={styles.statCard}>
             <Car size={24} color="#2196F3" />
-            <Text style={styles.statValue}>₹{stats.savedMoney}</Text>
+            <Text style={styles.statValue}>Γé╣{stats.savedMoney}</Text>
             <Text style={styles.statLabel}>Saved</Text>
           </View>
         </View>
@@ -324,7 +324,7 @@ const HomeScreen = ({ navigation, route }) => {
                 <MapPin size={20} color="#fff" />
               </View>
               <View style={styles.tripInfo}>
-                <Text style={styles.tripRoute}>{trip.from} → {trip.to}</Text>
+                <Text style={styles.tripRoute}>{trip.from} ΓåÆ {trip.to}</Text>
                 <Text style={styles.tripTime}>{trip.time}</Text>
               </View>
               <View style={styles.tripStatus}>

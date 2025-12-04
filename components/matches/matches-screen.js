@@ -10,10 +10,10 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Clock, MessageCircle, User } from 'lucide-react-native';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { Clock, MessageCircle } from 'lucide-react-native';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
-function MatchesScreenNew({ navigation, route }) {
+export function MatchesScreenNew({ navigation, route }) {
   const { city } = route.params || {};
   
   const initialData = [
@@ -37,35 +37,39 @@ function MatchesScreenNew({ navigation, route }) {
     return () => clearTimeout(t);
   }, []);
 
-  const onRefresh = () => {
+  function onRefresh() {
     setRefreshing(true);
     setTimeout(() => {
       setRiders((prev) => [...prev]);
       setRefreshing(false);
     }, 500);
-  };
+  }
 
-  const toggleSelect = (id) => {
+  function toggleSelect(id) {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+      setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
     } else {
       setSelectedIds([...selectedIds, id]);
     }
-  };
+  }
 
-  const handleRequest = () => {
+  function handleRequest() {
     if (selectedIds.length === 0) return;
-    setRiders((prev) => prev.map((r) => (selectedIds.includes(r.id) && r.status === 'available' ? { ...r, status: 'pending' } : r)));
+    setRiders((prev) =>
+      prev.map((r) => (selectedIds.includes(r.id) && r.status === 'available' ? { ...r, status: 'pending' } : r))
+    );
     setSelectedIds([]);
-  };
+  }
 
-  const handleChat = (riderId) => {
+  function handleChat(riderId) {
     navigation.navigate('Chat', { matchId: riderId });
-  };
+  }
 
-  const handleCancelPending = (riderId) => {
-    setRiders((prev) => prev.map((r) => (r.id === riderId && r.status === 'pending' ? { ...r, status: 'available' } : r)));
-  };
+  function handleCancelPending(riderId) {
+    setRiders((prev) =>
+      prev.map((r) => (r.id === riderId && r.status === 'pending' ? { ...r, status: 'available' } : r))
+    );
+  }
 
   const RiderCard = ({ rider }) => {
     const isAvailable = rider.status === 'available';
@@ -82,18 +86,15 @@ function MatchesScreenNew({ navigation, route }) {
         onPress={() => isAvailable && toggleSelect(rider.id)}
         disabled={!isAvailable}
       >
-        {/* Top Row: Name + Rating */}
         <View style={styles.riderHeader}>
           <Text style={styles.riderName}>{rider.name}</Text>
           <Text style={styles.riderRating}>{rider.rating}★</Text>
         </View>
 
-        {/* Route */}
         <Text style={styles.riderRoute} numberOfLines={1}>
           {rider.from} → {rider.to}
         </Text>
 
-        {/* Meta Row: left (time • seats • status) | right (price) */}
         <View style={styles.metaRow}>
           <View style={styles.detailsLeft}>
             <Text style={styles.riderDetail}>{rider.time}</Text>
@@ -115,7 +116,6 @@ function MatchesScreenNew({ navigation, route }) {
           <Text style={styles.priceText}>₹{rider.price}</Text>
         </View>
 
-        {/* Actions */}
         {isPending && (
           <View style={styles.pendingMessage}>
             <Clock size={14} color={COLORS.text.tertiary} />
@@ -157,7 +157,6 @@ function MatchesScreenNew({ navigation, route }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.bg.primary} />
 
-      {/* Minimal Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Available Riders</Text>
         <Text style={styles.headerSubtitle}>
@@ -166,7 +165,6 @@ function MatchesScreenNew({ navigation, route }) {
         </Text>
       </View>
 
-      {/* Riders List */}
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -189,11 +187,9 @@ function MatchesScreenNew({ navigation, route }) {
           riders.map((rider) => <RiderCard key={rider.id} rider={rider} />)
         )}
 
-        {/* Spacer for bottom button */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Actions - Thumb Zone */}
       {selectedIds.length > 0 && (
         <View style={styles.bottomActions}>
           <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>

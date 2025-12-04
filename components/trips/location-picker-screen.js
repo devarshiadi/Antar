@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -17,12 +16,10 @@ import {
   Locate,
   Navigation,
 } from 'lucide-react-native';
-import locationService from '../services/locationService';
+import locationService from '../../services/locationService';
 
-const { width, height } = Dimensions.get('window');
-
-// Leaflet map with dual pin capability (source + destination)
-const getDualPickerMapHTML = (lat, lng) => `
+function getDualPickerMapHTML(lat, lng) {
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,7 +51,6 @@ const getDualPickerMapHTML = (lat, lng) => `
       maxZoom: 19
     }).addTo(map);
 
-    // Current location marker (blue)
     var currentMarker = L.circleMarker([${lat}, ${lng}], {
       color: '#4A90E2',
       fillColor: '#4A90E2',
@@ -63,7 +59,6 @@ const getDualPickerMapHTML = (lat, lng) => `
       weight: 2
     }).addTo(map).bindPopup('Your location');
 
-    // Pickup marker (green)
     var pickupMarker = null;
     var pickupIcon = L.icon({
       iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCAzMiA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDBDOS4zNzI1OCAwIDQgNS4zNzI1OCA0IDEyQzQgMjEgMTYgMzYgMTYgMzZDMTYgMzYgMjggMjEgMjggMTJDMjggNS4zNzI1OCAyMi42Mjc0IDAgMTYgMFpNMTYgMTZDMTMuNzkwOSAxNiAxMiAxNC4yMDkxIDEyIDEyQzEyIDkuNzkwODYgMTMuNzkwOSA4IDE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2WiIgZmlsbD0iIzRDQUY1MCIvPgo8L3N2Zz4K',
@@ -72,7 +67,6 @@ const getDualPickerMapHTML = (lat, lng) => `
       popupAnchor: [0, -48]
     });
 
-    // Destination marker (red)
     var destMarker = null;
     var destIcon = L.icon({
       iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCAzMiA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDBDOS4zNzI1OCAwIDQgNS4zNzI1OCA0IDEyQzQgMjEgMTYgMzYgMTYgMzZDMTYgMzYgMjggMjEgMjggMTJDMjggNS4zNzI1OCAyMi42Mjc0IDAgMTYgMFpNMTYgMTZDMTMuNzkwOSAxNiAxMiAxNC4yMDkxIDEyIDEyQzEyIDkuNzkwODYgMTMuNzkwOSA4IDE2IDhDMTguMjA5MSA4IDIwIDkuNzkwODYgMjAgMTJDMjAgMTQuMjA5MSAxOC4yMDkxIDE2IDE2IDE2WiIgZmlsbD0iI0Y0NDMzNiIvPgo8L3N2Zz4K',
@@ -81,10 +75,8 @@ const getDualPickerMapHTML = (lat, lng) => `
       popupAnchor: [0, -48]
     });
 
-    // Route line
     var routeLine = null;
 
-    // Helper to (re)draw route
     function drawRoute() {
       if (!(pickupMarker && destMarker)) return;
       if (routeLine) { map.removeLayer(routeLine); }
@@ -111,13 +103,12 @@ const getDualPickerMapHTML = (lat, lng) => `
       map.fitBounds([pickupMarker.getLatLng(), destMarker.getLatLng()], {padding: [50, 50]});
     }
 
-    // JS bridge: allow RN to set markers and clear/reset
     window.setPickup = function(lat, lng) {
       if (pickupMarker) { map.removeLayer(pickupMarker); }
       pickupMarker = L.marker([lat, lng], {icon: pickupIcon}).addTo(map).bindPopup('Pickup Location');
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pickup_selected', latitude: lat, longitude: lng }));
       drawRoute();
-    };
+    }
 
     window.setDestination = function(lat, lng) {
       if (destMarker) { map.removeLayer(destMarker); }
@@ -141,23 +132,19 @@ const getDualPickerMapHTML = (lat, lng) => `
       }).addTo(map);
     };
 
-    // Add click event to map - first tap = pickup, second tap = destination
     map.on('click', function(e) {
       if (!pickupMarker) {
-        // First tap - set pickup location
         pickupMarker = L.marker([e.latlng.lat, e.latlng.lng], {icon: pickupIcon})
           .addTo(map)
           .bindPopup('Pickup Location')
           .openPopup();
         
-        // Notify React Native
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'pickup_selected',
           latitude: e.latlng.lat,
           longitude: e.latlng.lng
         }));
       } else if (!destMarker) {
-        // Second tap - set destination location
         destMarker = L.marker([e.latlng.lat, e.latlng.lng], {icon: destIcon})
           .addTo(map)
           .bindPopup('Destination')
@@ -165,19 +152,16 @@ const getDualPickerMapHTML = (lat, lng) => `
         
         drawRoute();
         
-        // Notify React Native
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'destination_selected',
           latitude: e.latlng.lat,
           longitude: e.latlng.lng
         }));
       } else {
-        // Both already set - reset and start over
         window.clearMarkers();
       }
     });
 
-    // Center on current location
     window.centerOnUser = function() {
       map.setView([${lat}, ${lng}], 13, { animate: true });
     };
@@ -185,8 +169,9 @@ const getDualPickerMapHTML = (lat, lng) => `
 </body>
 </html>
 `;
+}
 
-const LocationPickerScreen = ({ navigation, route }) => {
+export function LocationPickerScreen({ navigation, route }) {
   const webViewRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [pickupLocation, setPickupLocation] = useState(null);
@@ -200,13 +185,14 @@ const LocationPickerScreen = ({ navigation, route }) => {
   useEffect(() => {
     initializeLocation();
     let stop = false;
-    // start live tracking and update map marker
-    locationService.startTracking((loc) => {
-      if (webViewRef.current) {
-        const js = `window.updateUser(${loc.latitude}, ${loc.longitude});`;
-        webViewRef.current.injectJavaScript(js);
-      }
-    }).catch(() => {});
+    locationService
+      .startTracking((loc) => {
+        if (webViewRef.current) {
+          const js = `window.updateUser(${loc.latitude}, ${loc.longitude});`;
+          webViewRef.current.injectJavaScript(js);
+        }
+      })
+      .catch(() => {});
     return () => {
       if (!stop) {
         locationService.stopTracking();
@@ -215,7 +201,7 @@ const LocationPickerScreen = ({ navigation, route }) => {
     };
   }, []);
 
-  const initializeLocation = async () => {
+  async function initializeLocation() {
     try {
       const permissions = await locationService.hasPermissions();
       
@@ -236,9 +222,9 @@ const LocationPickerScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Failed to get your location');
       setLoading(false);
     }
-  };
+  }
 
-  const handleWebViewMessage = (event) => {
+  function handleWebViewMessage(event) {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       
@@ -263,9 +249,9 @@ const LocationPickerScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('WebView message error:', error);
     }
-  };
+  }
 
-  const handleConfirmLocation = async () => {
+  async function handleConfirmLocation() {
     if (locationType) {
       const selectedLocation = pickupLocation || destLocation;
       const selectedAddress = pickupAddress || destAddress;
@@ -283,7 +269,10 @@ const LocationPickerScreen = ({ navigation, route }) => {
       const locationData = {
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
-        address: selectedAddress || addressObj?.formatted || `${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)}`,
+        address:
+          selectedAddress ||
+          addressObj?.formatted ||
+          `${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)}`,
       };
 
       if (onLocationSelected) {
@@ -319,12 +308,18 @@ const LocationPickerScreen = ({ navigation, route }) => {
       pickup: {
         latitude: pickupLocation.latitude,
         longitude: pickupLocation.longitude,
-        address: pickupAddress || pickupAddressObj?.formatted || `${pickupLocation.latitude.toFixed(4)}, ${pickupLocation.longitude.toFixed(4)}`,
+        address:
+          pickupAddress ||
+          pickupAddressObj?.formatted ||
+          `${pickupLocation.latitude.toFixed(4)}, ${pickupLocation.longitude.toFixed(4)}`,
       },
       destination: {
         latitude: destLocation.latitude,
         longitude: destLocation.longitude,
-        address: destAddress || destAddressObj?.formatted || `${destLocation.latitude.toFixed(4)}, ${destLocation.longitude.toFixed(4)}`,
+        address:
+          destAddress ||
+          destAddressObj?.formatted ||
+          `${destLocation.latitude.toFixed(4)}, ${destLocation.longitude.toFixed(4)}`,
       },
     };
 
@@ -332,23 +327,23 @@ const LocationPickerScreen = ({ navigation, route }) => {
       tripType,
       locations: locationsData,
     });
-  };
+  }
 
-  const centerOnCurrentLocation = () => {
+  function centerOnCurrentLocation() {
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript('window.centerOnUser();');
     }
-  };
+  }
 
-  const setCurrentAsNextPoint = () => {
+  function setCurrentAsNextPoint() {
     if (!currentLocation || !webViewRef.current) return;
     const { latitude, longitude } = currentLocation;
-    const fn = !pickupLocation ? 'setPickup' : (!destLocation ? 'setDestination' : 'clearMarkers');
+    const fn = !pickupLocation ? 'setPickup' : !destLocation ? 'setDestination' : 'clearMarkers';
     const js = `window.${fn}(${latitude}, ${longitude});`;
     webViewRef.current.injectJavaScript(js);
-  };
+  }
 
-  const clearAllPoints = () => {
+  function clearAllPoints() {
     if (webViewRef.current) {
       webViewRef.current.injectJavaScript('window.clearMarkers();');
     }
@@ -367,7 +362,6 @@ const LocationPickerScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -381,7 +375,6 @@ const LocationPickerScreen = ({ navigation, route }) => {
         <View style={styles.headerRight} />
       </View>
 
-      {/* Map */}
       {currentLocation && (
         <WebView
           ref={webViewRef}
@@ -399,18 +392,20 @@ const LocationPickerScreen = ({ navigation, route }) => {
         />
       )}
 
-      {/* Instruction Card */}
       <View style={styles.instructionCard}>
         <Text style={styles.instructionText}>
-          {locationType === 'source' ? '📍 Tap to set pickup location' :
-           locationType === 'destination' ? '🎯 Tap to set destination' :
-           !pickupLocation ? '📍 Tap to set pickup location' : 
-           !destLocation ? '🎯 Tap to set destination' : 
-           '✅ Both locations set. Tap again to reset'}
+          {locationType === 'source'
+            ? '📍 Tap to set pickup location'
+            : locationType === 'destination'
+            ? '🎯 Tap to set destination'
+            : !pickupLocation
+            ? '📍 Tap to set pickup location'
+            : !destLocation
+            ? '🎯 Tap to set destination'
+            : '✅ Both locations set. Tap again to reset'}
         </Text>
       </View>
 
-      {/* Floating Locate Button */}
       <TouchableOpacity
         style={styles.locateButton}
         onPress={centerOnCurrentLocation}
@@ -419,35 +414,33 @@ const LocationPickerScreen = ({ navigation, route }) => {
         <Locate size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* Bottom Controls */}
       <View style={styles.controls}>
-        {/* Pickup Location Card */}
         {pickupLocation && (
           <View style={styles.locationCard}>
             <View style={[styles.locationMarker, { backgroundColor: '#4CAF50' }]} />
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Pickup</Text>
               <Text style={styles.locationCoords} numberOfLines={2}>
-                {pickupAddress || `${pickupLocation.latitude.toFixed(6)}, ${pickupLocation.longitude.toFixed(6)}`}
+                {pickupAddress ||
+                  `${pickupLocation.latitude.toFixed(6)}, ${pickupLocation.longitude.toFixed(6)}`}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Destination Location Card */}
         {destLocation && (
           <View style={styles.locationCard}>
             <View style={[styles.locationMarker, { backgroundColor: '#F44336' }]} />
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Destination</Text>
               <Text style={styles.locationCoords} numberOfLines={2}>
-                {destAddress || `${destLocation.latitude.toFixed(6)}, ${destLocation.longitude.toFixed(6)}`}
+                {destAddress ||
+                  `${destLocation.latitude.toFixed(6)}, ${destLocation.longitude.toFixed(6)}`}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Secondary Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.secondaryButton}
@@ -456,7 +449,7 @@ const LocationPickerScreen = ({ navigation, route }) => {
           >
             <MapPin size={18} color="#fff" />
             <Text style={styles.secondaryText}>
-              {!pickupLocation ? 'Use Current' : (!destLocation ? 'Use Current' : 'Reset')}
+              {!pickupLocation ? 'Use Current' : !destLocation ? 'Use Current' : 'Reset'}
             </Text>
           </TouchableOpacity>
 
@@ -470,22 +463,35 @@ const LocationPickerScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Primary Confirm Button */}
         <TouchableOpacity
-          style={[styles.confirmButton, (locationType ? !pickupLocation : (!pickupLocation || !destLocation)) && styles.confirmButtonDisabled]}
+          style={[
+            styles.confirmButton,
+            (locationType ? !pickupLocation : !pickupLocation || !destLocation) &&
+              styles.confirmButtonDisabled,
+          ]}
           onPress={handleConfirmLocation}
-          disabled={locationType ? !pickupLocation : (!pickupLocation || !destLocation)}
+          disabled={locationType ? !pickupLocation : !pickupLocation || !destLocation}
           activeOpacity={0.9}
         >
-          <Check size={24} color={(locationType ? !pickupLocation : (!pickupLocation || !destLocation)) ? '#666' : '#000'} />
-          <Text style={[styles.confirmButtonText, (locationType ? !pickupLocation : (!pickupLocation || !destLocation)) && { color: '#666' }]}>
+          <Check
+            size={24}
+            color={
+              locationType ? !pickupLocation : !pickupLocation || !destLocation ? '#666' : '#000'
+            }
+          />
+          <Text
+            style={[
+              styles.confirmButtonText,
+              (locationType ? !pickupLocation : !pickupLocation || !destLocation) && { color: '#666' },
+            ]}
+          >
             {locationType ? 'Confirm Location' : 'Confirm Locations'}
           </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
