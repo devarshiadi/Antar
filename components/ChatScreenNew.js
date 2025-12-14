@@ -12,26 +12,109 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Send, Phone, Info } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { useAppTheme } from '../helpers/use-app-theme';
+
+const CHAT_STORAGE_PREFIX = 'chat_history_';
+const CHAT_THREADS_KEY = 'chat_threads';
+const seededMessages = [
+  { id: 1, text: 'Hi, I’ll be there in 5 minutes!', type: 'sent', timestamp: new Date().toISOString() },
+  { id: 2, text: 'Okay, thanks!', type: 'received', timestamp: new Date().toISOString() },
+  { id: 3, text: 'Just arrived at the pickup point.', type: 'sent', timestamp: new Date().toISOString() },
+];
 
 function ChatScreenNew({ navigation, route }) {
-  const { matchId } = route.params || {};
-  const [messages, setMessages] = useState([
-    { id: 1, text: 'Hi, I\'ll be there in 5 minutes!', type: 'sent', timestamp: new Date() },
-    { id: 2, text: 'Ok, thanks!', type: 'received', timestamp: new Date() },
-    { id: 3, text: 'Just arrived at the pickup point.', type: 'sent', timestamp: new Date() },
-  ]);
+  const { matchId, contact } = route.params || {};
+  const { colors, statusBarStyle } = useAppTheme();
+  const [messages, setMessages] = useState(seededMessages);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef(null);
 
   const otherUser = {
-    name: 'Rajesh Kumar',
-    rating: 4.8,
+    name: contact?.name || 'Support',
+    rating: contact?.rating || 5,
+    route: contact?.route || '',
+    time: contact?.time || '',
+    fare: contact?.fare,
   };
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadHistory() {
+      if (!matchId) {
+        return;
+      }
+      try {
+        const stored = await AsyncStorage.getItem(`${CHAT_STORAGE_PREFIX}${matchId}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (mounted) {
+            setMessages(parsed);
+            await persistThreadSnapshot(parsed);
+          }
+        } else {
+          await AsyncStorage.setItem(`${CHAT_STORAGE_PREFIX}${matchId}`, JSON.stringify(seededMessages));
+          await persistThreadSnapshot(seededMessages);
+        }
+      } catch (error) {
+        console.log('Failed to load chat history', error);
+      }
+    }
+    loadHistory();
+    return () => {
+      mounted = false;
+    };
+  }, [matchId]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+
+  async function persistMessages(nextMessages) {
+    if (!matchId) {
+      return;
+    }
+    try {
+      await AsyncStorage.setItem(`${CHAT_STORAGE_PREFIX}${matchId}`, JSON.stringify(nextMessages));
+      await persistThreadSnapshot(nextMessages);
+    } catch (error) {
+      console.log('Failed to persist chat history', error);
+    }
+  }
+
+  async function persistThreadSnapshot(latestMessages) {
+    if (!matchId) {
+      return;
+    }
+    const last = latestMessages[latestMessages.length - 1];
+    const snapshot = {
+      matchId,
+      contact: {
+        name: otherUser.name,
+        rating: otherUser.rating,
+        route: otherUser.route,
+        time: otherUser.time,
+        fare: otherUser.fare,
+      },
+      lastMessage: last?.text ?? '',
+      updatedAt: last?.timestamp ?? new Date().toISOString(),
+    };
+    try {
+      const stored = await AsyncStorage.getItem(CHAT_THREADS_KEY);
+      const threads = stored ? JSON.parse(stored) : [];
+      const index = threads.findIndex((thread) => thread.matchId === matchId);
+      if (index >= 0) {
+        threads[index] = { ...threads[index], ...snapshot };
+      } else {
+        threads.push(snapshot);
+      }
+      threads.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      await AsyncStorage.setItem(CHAT_THREADS_KEY, JSON.stringify(threads));
+    } catch (error) {
+      console.log('Failed to persist chat thread', error);
+    }
+  }
 
   const handleSend = () => {
     if (inputText.trim()) {
@@ -39,9 +122,11 @@ function ChatScreenNew({ navigation, route }) {
         id: messages.length + 1,
         text: inputText.trim(),
         type: 'sent',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
-      setMessages([...messages, newMessage]);
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      persistMessages(updatedMessages);
       setInputText('');
     }
   };
@@ -61,8 +146,8 @@ function ChatScreenNew({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -72,6 +157,12 @@ function ChatScreenNew({ navigation, route }) {
         <View style={styles.headerCenter}>
           <Text style={styles.headerName}>{otherUser.name}</Text>
           <Text style={styles.headerRating}>{otherUser.rating}★</Text>
+          {!!otherUser.route && (
+            <Text style={styles.headerMeta}>
+              {otherUser.route}
+              {otherUser.time ? ` • ${otherUser.time}` : ''}
+            </Text>
+          )}
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>

@@ -261,69 +261,79 @@ export const notificationService = {
 
 // ==================== WEBSOCKET SERVICE ====================
 
-export class LocationWebSocket {
-  constructor(userId) {
-    this.userId = userId;
-    this.ws = null;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-  }
+export function createLocationWebSocket(userId) {
+  let ws = null;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
 
-  connect(onMessage, onError) {
-    const wsUrl = `ws://localhost:8000/ws/location/${this.userId}`;
+  function connect(onMessage, onError) {
+    const wsUrl = `ws://localhost:8000/ws/location/${userId}`;
     
     try {
-      this.ws = new WebSocket(wsUrl);
+      ws = new WebSocket(wsUrl);
 
-      this.ws.onopen = () => {
+      ws.onopen = () => {
         console.log('WebSocket connected');
-        this.reconnectAttempts = 0;
+        reconnectAttempts = 0;
       };
 
-      this.ws.onmessage = (event) => {
+      ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (onMessage) onMessage(data);
+        if (onMessage) {
+          onMessage(data);
+        }
       };
 
-      this.ws.onerror = (error) => {
+      ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        if (onError) onError(error);
+        if (onError) {
+          onError(error);
+        }
       };
 
-      this.ws.onclose = () => {
+      ws.onclose = () => {
         console.log('WebSocket disconnected');
-        this.reconnect(onMessage, onError);
+        reconnect(onMessage, onError);
       };
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
-      if (onError) onError(error);
+      if (onError) {
+        onError(error);
+      }
     }
   }
 
-  reconnect(onMessage, onError) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+  function reconnect(onMessage, onError) {
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts += 1;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
       
       setTimeout(() => {
-        console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
-        this.connect(onMessage, onError);
+        console.log(`Reconnecting... Attempt ${reconnectAttempts}`);
+        connect(onMessage, onError);
       }, delay);
     }
   }
 
-  send(data) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
+  function send(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
     }
   }
 
-  disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+  function disconnect() {
+    if (ws) {
+      ws.close();
+      ws = null;
     }
   }
+
+  return {
+    connect,
+    reconnect,
+    send,
+    disconnect,
+  };
 }
 
 export default api;

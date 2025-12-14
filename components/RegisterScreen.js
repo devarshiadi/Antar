@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, SafeAreaView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, SafeAreaView, Switch, StatusBar } from 'react-native';
+import { COLORS } from '../constants/theme';
+import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
 const RegisterScreen = ({ navigation }) => {
+  const { colors, statusBarStyle } = useAppTheme();
   const [fullName, setFullName] = useState('');
   const [phoneNumber1, setPhoneNumber1] = useState('');
   const [phoneNumber2, setPhoneNumber2] = useState('');
@@ -15,37 +18,38 @@ const RegisterScreen = ({ navigation }) => {
   const handleRegister = () => {
     console.log('Registering with:', { fullName, phoneNumber1, phoneNumber2, password, confirmPassword, isDriver, licenseType });
     // Navigate to Verification screen
-    navigation.navigate('Verification');
+    navigation.navigate('Verification', { phoneNumber: phoneNumber1.trim() });
   };
 
   const toggleDriverSwitch = () => setIsDriver(previousState => !previousState);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>RegisterScreen</Text>
-      <Text style={styles.greetingText}>Join Antar! Please create a account.</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
+      <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RegisterScreen</Text>
+      <Text style={[styles.greetingText, { color: colors.text.secondary }]}>Join Antar! Please create a account.</Text>
 
       <TouchableOpacity style={styles.avatarPlaceholder}>
-        <Text style={styles.avatarText}>Tap to upload avatar</Text>
+        <Text style={[styles.avatarText, { color: colors.text.primary }]}>Tap to upload avatar</Text>
       </TouchableOpacity>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Full Name</Text>
+        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Full Name</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
           placeholder="Full Name"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.text.tertiary}
           value={fullName}
           onChangeText={setFullName}
         />
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Phone Number</Text>
+        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Phone Number</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
           placeholder="Phone Number"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.text.tertiary}
           keyboardType="phone-pad"
           value={phoneNumber1}
           onChangeText={setPhoneNumber1}
@@ -53,11 +57,11 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Phone Number</Text>
+        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Phone Number</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
           placeholder="Phone Number"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.text.tertiary}
           keyboardType="phone-pad"
           value={phoneNumber2}
           onChangeText={setPhoneNumber2}
@@ -65,11 +69,11 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Password</Text>
+        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Password</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
           placeholder="Password"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.text.tertiary}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -77,11 +81,11 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Confirm Password</Text>
+        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Confirm Password</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
           placeholder="Confirm Password"
-          placeholderTextColor="#666"
+          placeholderTextColor={colors.text.tertiary}
           secureTextEntry
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -89,7 +93,7 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.driverSwitchContainer}>
-        <Text style={styles.driverSwitchText}>Are you registering as a driver?</Text>
+        <Text style={[styles.driverSwitchText, { color: colors.text.primary }]}>Are you registering as a driver?</Text>
         <Switch
           trackColor={{ false: "#767577", true: "#81b0ff" }}
           thumbColor={isDriver ? "#f5dd4b" : "#f4f3f4"}
@@ -102,17 +106,17 @@ const RegisterScreen = ({ navigation }) => {
       {isDriver && (
         <View style={styles.driverFieldsContainer}>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>License Type</Text>
+            <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>License Type</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
               placeholder="License Type"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.text.tertiary}
               value={licenseType}
               onChangeText={setLicenseType}
             />
           </View>
           <TouchableOpacity style={styles.uploadVehicleButton}>
-            <Text style={styles.uploadVehicleText}>Upload Vehicle Photo</Text>
+            <Text style={[styles.uploadVehicleText, { color: colors.text.primary }]}>Upload Vehicle Photo</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -127,7 +131,7 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: COLORS.bg.primary,
     paddingHorizontal: 20,
     paddingTop: 40,
   },
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   createAccountButton: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.button.primaryBg,
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',
@@ -211,7 +215,7 @@ const styles = StyleSheet.create({
   createAccountButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: COLORS.button.primaryText,
   },
 });
 

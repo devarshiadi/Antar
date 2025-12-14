@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,7 +23,93 @@ const onboardingData = [
   },
 ];
 
+function getStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+      paddingHorizontal: 20,
+    },
+    topContent: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: -height * 0.05,
+    },
+    onboardingImage: {
+      width: width * 0.75,
+      height: height * 0.28,
+      marginBottom: height * 0.05,
+    },
+    title: {
+      fontSize: Math.min(width * 0.075, 28),
+      fontWeight: 'bold',
+      marginBottom: 12,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+      color: colors.text.primary,
+    },
+    subtitle: {
+      fontSize: Math.min(width * 0.04, 16),
+      textAlign: 'center',
+      paddingHorizontal: 30,
+      lineHeight: 22,
+      color: colors.text.secondary,
+    },
+    bottomContent: {
+      paddingBottom: height * 0.03,
+      alignItems: 'center',
+    },
+    paginationDots: {
+      flexDirection: 'row',
+      marginBottom: height * 0.04,
+      alignItems: 'center',
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.text.tertiary,
+      marginHorizontal: 4,
+    },
+    activeDot: {
+      backgroundColor: colors.text.primary,
+    },
+    activeDotExpanded: {
+      width: 24,
+    },
+    nextButton: {
+      backgroundColor: colors.button.primaryBg,
+      paddingVertical: height * 0.018,
+      paddingHorizontal: width * 0.2,
+      borderRadius: 25,
+      minWidth: width * 0.75,
+      alignItems: 'center',
+      marginBottom: 15,
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    nextButtonText: {
+      fontSize: Math.min(width * 0.042, 17),
+      fontWeight: '600',
+      color: colors.button.primaryText,
+    },
+    pageIndicator: {
+      color: colors.text.tertiary,
+      fontSize: 13,
+      fontWeight: '400',
+    },
+  });
+}
+
 const WelcomeScreen = ({ navigation }) => {
+  const { colors, statusBarStyle } = useAppTheme();
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentScreen = onboardingData[currentIndex];
   const isLastScreen = currentIndex === onboardingData.length - 1;
@@ -31,26 +118,17 @@ const WelcomeScreen = ({ navigation }) => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Navigate to Login screen
       navigation.navigate('Login');
     }
   };
 
   const handleSkip = () => {
-    // Navigate to Login screen
     navigation.navigate('Login');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Skip button - hide on last screen */}
-      {!isLastScreen && (
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipButtonText}>Skip</Text>
-        </TouchableOpacity>
-      )}
-      {isLastScreen && <View style={styles.skipButtonPlaceholder} />}
-
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.topContent}>
         <Image
           source={currentScreen.image}
@@ -60,7 +138,6 @@ const WelcomeScreen = ({ navigation }) => {
         <Text style={styles.title}>{currentScreen.title}</Text>
         <Text style={styles.subtitle}>{currentScreen.subtitle}</Text>
       </View>
-      
       <View style={styles.bottomContent}>
         <View style={styles.paginationDots}>
           {onboardingData.map((_, index) => (
@@ -74,17 +151,15 @@ const WelcomeScreen = ({ navigation }) => {
             />
           ))}
         </View>
-        
         <TouchableOpacity 
-          style={[styles.nextButton, isLastScreen && styles.getStartedButton]} 
+          style={styles.nextButton} 
           onPress={handleNext}
           activeOpacity={0.8}
         >
-          <Text style={[styles.nextButtonText, isLastScreen && styles.getStartedText]}>
+          <Text style={styles.nextButtonText}>
             {isLastScreen ? 'Get Started' : 'Next'}
           </Text>
         </TouchableOpacity>
-        
         {!isLastScreen && (
           <Text style={styles.pageIndicator}>{currentIndex + 1} of {onboardingData.length}</Text>
         )}
@@ -92,106 +167,5 @@ const WelcomeScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-    paddingHorizontal: 20,
-  },
-  skipButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
-    marginTop: 10,
-  },
-  skipButtonPlaceholder: {
-    height: 44, // Same height as skip button to maintain layout
-  },
-  skipButtonText: {
-    color: '#888',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  topContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -height * 0.05, // Pull content up slightly
-  },
-  onboardingImage: {
-    width: width * 0.75,
-    height: height * 0.28,
-    marginBottom: height * 0.05,
-  },
-  title: {
-    fontSize: Math.min(width * 0.075, 28),
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 12,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  subtitle: {
-    fontSize: Math.min(width * 0.04, 16),
-    color: '#aaa',
-    textAlign: 'center',
-    paddingHorizontal: 30,
-    lineHeight: 22,
-  },
-  bottomContent: {
-    paddingBottom: height * 0.03,
-    alignItems: 'center',
-  },
-  paginationDots: {
-    flexDirection: 'row',
-    marginBottom: height * 0.04,
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#444',
-    marginHorizontal: 4,
-    transition: 'all 0.3s',
-  },
-  activeDot: {
-    backgroundColor: '#fff',
-  },
-  activeDotExpanded: {
-    width: 24, // Expanded width for active dot
-  },
-  nextButton: {
-    backgroundColor: '#fff',
-    paddingVertical: height * 0.018,
-    paddingHorizontal: width * 0.2,
-    borderRadius: 25,
-    minWidth: width * 0.75,
-    alignItems: 'center',
-    marginBottom: 15,
-    elevation: 3, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  getStartedButton: {
-    backgroundColor: '#4CAF50', // Green for final CTA
-  },
-  nextButtonText: {
-    fontSize: Math.min(width * 0.042, 17),
-    fontWeight: '600',
-    color: '#000',
-  },
-  getStartedText: {
-    color: '#fff',
-  },
-  pageIndicator: {
-    color: '#666',
-    fontSize: 13,
-    fontWeight: '400',
-  },
-});
 
 export default WelcomeScreen;

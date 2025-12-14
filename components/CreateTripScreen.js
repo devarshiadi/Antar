@@ -21,10 +21,13 @@ import {
   DollarSign,
   Search,
 } from 'lucide-react-native';
+import { COLORS } from '../constants/theme';
+import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
 const CreateTripScreen = ({ navigation, route }) => {
+  const { colors, statusBarStyle } = useAppTheme();
   const { tripType = 'offer' } = route.params || {};
   const [sourceLocation, setSourceLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
@@ -76,8 +79,8 @@ const CreateTripScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       
       {/* Header */}
       <View style={styles.header}>
@@ -245,7 +248,7 @@ const CreateTripScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: COLORS.bg.primary,
   },
   header: {
     flexDirection: 'row',
@@ -274,7 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: COLORS.accent.primary,
   },
   tripTypeIndicatorText: {
     fontSize: 16,
@@ -390,14 +393,14 @@ const styles = StyleSheet.create({
   },
   mapPickerFooterText: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: COLORS.accent.primary,
     marginLeft: 8,
     fontWeight: '600',
   },
   autoFilledText: {
     flex: 1,
     fontSize: 16,
-    color: '#4CAF50',
+    color: COLORS.accent.primary,
     fontWeight: '500',
   },
   input: {
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 25,
     borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: COLORS.accent.primary,
   },
   infoTitle: {
     fontSize: 16,
@@ -429,7 +432,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   createButton: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.button.primaryBg,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -437,7 +440,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: COLORS.button.primaryText,
   },
 });
 

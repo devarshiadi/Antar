@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,108 +7,211 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle, X } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, X, MessageCircle } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import {
+  getNotificationsForUser,
+  updateNotification,
+  removeNotification,
+  addNotification,
+} from '../helpers/notifications-storage';
+import { updateRide, updateRideRequest } from '../helpers/rides-storage';
+import { useAppTheme } from '../helpers/use-app-theme';
 
-function NotificationsScreenNew({ navigation }) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: 'New Match Found',
-      message: 'Rajesh Kumar is going your way with 95% route match',
-      time: '5 mins ago',
-      read: false,
-      actionable: true,
-    },
-    {
-      id: 2,
-      title: 'Trip Confirmed',
-      message: 'Your trip to Whitefield has been confirmed for 8:30 AM',
-      time: '15 mins ago',
-      read: false,
-      actionable: false,
-    },
-    {
-      id: 3,
-      title: 'New Message',
-      message: 'Priya Sharma: "I\'ll be there in 5 minutes"',
-      time: '1 hour ago',
-      read: true,
-      actionable: false,
-    },
-    {
-      id: 4,
-      title: 'Match Request',
-      message: 'Amit Patel wants to join your ride to HSR Layout',
-      time: '2 hours ago',
-      read: true,
-      actionable: true,
-    },
-  ]);
+function NotificationsScreenNew({ navigation, route }) {
+  const routeUser = route.params?.user || null;
+  const { colors, statusBarStyle } = useAppTheme();
+  const [currentUser, setCurrentUser] = useState(routeUser || null);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDismiss = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-  };
+  async function loadNotifications() {
+    setLoading(true);
+    const items = await getNotificationsForUser(currentUser?.id);
+    setNotifications(items);
+    setLoading(false);
+  }
 
-  const handleAccept = (id) => {
-    console.log('Accepted notification:', id);
-    handleDismiss(id);
-  };
+  useEffect(() => {
+    async function hydrateUser() {
+      if (routeUser && routeUser.id) {
+        setCurrentUser(routeUser);
+        return;
+      }
+      if (currentUser && currentUser.id) {
+        return;
+      }
+      try {
+        const stored = await AsyncStorage.getItem('user');
+        if (!stored) {
+          return;
+        }
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.id) {
+          setCurrentUser(parsed);
+        }
+      } catch (error) {
+      }
+    }
+    hydrateUser();
+  }, [routeUser?.id]);
 
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    ));
-  };
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', loadNotifications);
+    return unsubscribe;
+  }, [navigation, currentUser?.id]);
 
-  const NotificationCard = ({ notification }) => (
-    <TouchableOpacity
-      style={[
-        styles.notificationCard,
-        !notification.read && styles.unreadCard,
-      ]}
-      onPress={() => markAsRead(notification.id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.notificationContent}>
-        <View style={styles.notificationHeader}>
-          <Text style={styles.notificationTitle}>{notification.title}</Text>
-          {!notification.read && <View style={styles.unreadDot} />}
-        </View>
-        
-        <Text style={styles.notificationMessage}>{notification.message}</Text>
-        <Text style={styles.notificationTime}>{notification.time}</Text>
+  async function handleDismiss(notificationId) {
+    await removeNotification(notificationId);
+    setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
+  }
 
-        {notification.actionable && !notification.read && (
+  async function handleAccept(notification) {
+    if (!notification.requestId || !notification.rideId || !notification.seekerId) {
+      return;
+    }
+    await Promise.all([
+      updateRide(notification.rideId, { status: 'accepted' }),
+      updateRideRequest(notification.requestId, { status: 'accepted' }),
+      updateNotification(notification.id, { allowChat: true }),
+      addNotification({
+        rideId: notification.rideId,
+        requestId: notification.requestId,
+        type: 'accept',
+        title: 'Request accepted',
+        message: `${currentUser?.name || 'Driver'} accepted your ride request.`,
+        recipientId: notification.seekerId,
+        seekerId: notification.seekerId,
+        allowChat: true,
+        counterpartyName: currentUser?.name || 'Driver',
+        routeSummary: notification.routeSummary || notification.message,
+      }),
+    ]);
+    loadNotifications();
+  }
+
+  async function handleReject(notification) {
+    if (!notification.requestId || !notification.rideId || !notification.seekerId) {
+      return;
+    }
+    await Promise.all([
+      updateRide(notification.rideId, { status: 'available' }),
+      updateRideRequest(notification.requestId, { status: 'rejected' }),
+      removeNotification(notification.id),
+      addNotification({
+        rideId: notification.rideId,
+        requestId: notification.requestId,
+        type: 'reject',
+        title: 'Request rejected',
+        message: `${currentUser?.name || 'Driver'} could not confirm your request.`,
+        recipientId: notification.seekerId,
+        seekerId: notification.seekerId,
+        counterpartyName: currentUser?.name || 'Driver',
+        routeSummary: notification.routeSummary || notification.message,
+      }),
+    ]);
+    loadNotifications();
+  }
+
+  async function markAsRead(notificationId) {
+    setNotifications((prev) =>
+      prev.map((notification) => (notification.id === notificationId ? { ...notification, read: true } : notification)),
+    );
+    await updateNotification(notificationId, { read: true });
+  }
+
+  function handleOpenChat(notification) {
+    if (!notification.allowChat || !notification.rideId) {
+      return;
+    }
+    navigation.navigate('Chat', {
+      matchId: notification.rideId,
+      contact: {
+        name: notification.counterpartyName || 'Ride partner',
+        route: notification.routeSummary || notification.message,
+      },
+    });
+  }
+
+  function renderActions(notification) {
+    const isRequestForCurrentUser =
+      notification.type === 'request' &&
+      (!currentUser || !notification.recipientId || notification.recipientId === currentUser.id);
+
+    if (notification.type === 'request') {
+      if (notification.allowChat) {
+        return (
           <View style={styles.notificationActions}>
-            <TouchableOpacity
-              style={styles.acceptButton}
-              onPress={() => handleAccept(notification.id)}
-            >
+            <TouchableOpacity style={styles.chatButton} onPress={() => handleOpenChat(notification)}>
+              <MessageCircle size={14} color={COLORS.bg.primary} />
+              <Text style={styles.chatButtonText}>Open Chat</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      if (isRequestForCurrentUser) {
+        return (
+          <View style={styles.notificationActions}>
+            <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(notification)}>
               <CheckCircle size={14} color={COLORS.text.primary} />
               <Text style={styles.acceptText}>Accept</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.rejectButton} onPress={() => handleReject(notification)}>
+              <Text style={styles.rejectText}>Decline</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
+        );
+      }
+      return null;
+    }
 
+    if (notification.allowChat) {
+      return (
+        <View style={styles.notificationActions}>
+          <TouchableOpacity style={styles.chatButton} onPress={() => handleOpenChat(notification)}>
+            <MessageCircle size={14} color={COLORS.bg.primary} />
+            <Text style={styles.chatButtonText}>Open Chat</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return null;
+  }
+
+  function NotificationCard({ notification }) {
+    return (
       <TouchableOpacity
-        style={styles.dismissButton}
-        onPress={() => handleDismiss(notification.id)}
+        style={[styles.notificationCard, !notification.read && styles.unreadCard]}
+        onPress={() => markAsRead(notification.id)}
+        activeOpacity={0.7}
       >
-        <X size={18} color={COLORS.text.tertiary} />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
+        <View style={styles.notificationContent}>
+          <View style={styles.notificationHeader}>
+            <Text style={styles.notificationTitle}>{notification.title}</Text>
+            {!notification.read && <View style={styles.unreadDot} />}
+          </View>
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+          <Text style={styles.notificationMessage}>{notification.message}</Text>
+          <Text style={styles.notificationTime}>{new Date(notification.createdAt).toLocaleString()}</Text>
+
+          {renderActions(notification)}
+        </View>
+
+        <TouchableOpacity style={styles.dismissButton} onPress={() => handleDismiss(notification.id)}>
+          <X size={18} color={COLORS.text.tertiary} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  }
+
+  const unreadCount = useMemo(() => notifications.filter((notification) => !notification.read).length, [notifications]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text.primary} />
@@ -124,16 +227,11 @@ function NotificationsScreenNew({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Notifications List */}
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <NotificationCard key={notification.id} notification={notification} />
-          ))
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
+        {loading ? (
+          <Text style={styles.emptyText}>Loading...</Text>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => <NotificationCard key={notification.id} notification={notification} />)
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No notifications</Text>
@@ -243,12 +341,26 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
     borderWidth: 1,
-    borderColor: COLORS.border.default,
+    borderColor: COLORS.button.primaryBg,
     borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.button.primaryBg,
   },
   acceptText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.text.primary,
+    color: COLORS.button.primaryText,
+    fontWeight: '600',
+  },
+  rejectButton: {
+    marginLeft: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.button.secondaryBorder,
+    borderRadius: RADIUS.sm,
+  },
+  rejectText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.button.secondaryText,
     fontWeight: '600',
   },
   dismissButton: {
@@ -267,6 +379,20 @@ const styles = StyleSheet.create({
   emptySubtext: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.tertiary,
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.button.primaryBg,
+  },
+  chatButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.button.primaryText,
+    fontWeight: '600',
   },
 });
 

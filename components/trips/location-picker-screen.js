@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -16,9 +17,10 @@ import {
   Locate,
   Navigation,
 } from 'lucide-react-native';
-import locationService from '../../services/locationService';
+import { locationService } from '../../services/locationService';
+import { useAppTheme } from '../../helpers/use-app-theme';
 
-function getDualPickerMapHTML(lat, lng) {
+function getDualPickerMapHTML(lat, lng, isDark) {
   return `
 <!DOCTYPE html>
 <html>
@@ -47,7 +49,7 @@ function getDualPickerMapHTML(lat, lng) {
   <script>
     var map = L.map('map').setView([${lat}, ${lng}], 13);
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('${isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'}', {
       maxZoom: 19
     }).addTo(map);
 
@@ -171,8 +173,208 @@ function getDualPickerMapHTML(lat, lng) {
 `;
 }
 
+function getStyles(colors, isDark) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      color: colors.text.primary,
+      fontSize: 16,
+      marginTop: 16,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: colors.bg.primary,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.bg.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border.default,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+    },
+    headerRight: {
+      width: 40,
+    },
+    map: {
+      flex: 1,
+    },
+    mapLoadingContainer: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.bg.primary,
+    },
+    instructionCard: {
+      position: 'absolute',
+      top: 80,
+      left: 16,
+      right: 16,
+      backgroundColor: isDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.border.default,
+    },
+    instructionText: {
+      color: isDark ? '#fff' : colors.text.primary,
+      fontSize: 14,
+      fontWeight: '500',
+      textAlign: 'center',
+      letterSpacing: 0.3,
+    },
+    controls: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingHorizontal: 16,
+      paddingBottom: 20,
+      paddingTop: 16,
+      backgroundColor: colors.bg.primary,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.default,
+    },
+    locationCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.bg.card,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      marginBottom: 10,
+      minHeight: 56,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+    },
+    locationMarker: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+    },
+    locationInfo: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    locationLabel: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      marginBottom: 2,
+      fontWeight: '500',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    locationCoords: {
+      color: colors.text.primary,
+      fontSize: 13,
+      fontWeight: '400',
+      lineHeight: 18,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 12,
+    },
+    locateButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: colors.bg.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      position: 'absolute',
+      bottom: 200,
+      right: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    secondaryButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.bg.card,
+      borderRadius: 10,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      minHeight: 56,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+    },
+    secondaryText: {
+      color: colors.text.primary,
+      fontSize: 14,
+      fontWeight: '500',
+      marginLeft: 8,
+    },
+    confirmButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.button.primaryBg,
+      borderRadius: 12,
+      paddingVertical: 18,
+      paddingHorizontal: 24,
+      minHeight: 56,
+      marginTop: 8,
+      shadowColor: colors.button.primaryBg,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    confirmButtonDisabled: {
+      backgroundColor: colors.bg.elevated,
+      shadowOpacity: 0,
+    },
+    confirmButtonText: {
+      color: colors.button.primaryText,
+      fontSize: 16,
+      fontWeight: '700',
+      marginLeft: 8,
+      letterSpacing: 0.5,
+    },
+  });
+}
+
 export function LocationPickerScreen({ navigation, route }) {
   const webViewRef = useRef(null);
+  const { colors, statusBarStyle, isDark } = useAppTheme();
+  const styles = useMemo(function () {
+    return getStyles(colors, isDark);
+  }, [colors, isDark]);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
@@ -181,6 +383,13 @@ export function LocationPickerScreen({ navigation, route }) {
   const [destAddress, setDestAddress] = useState('');
 
   const { tripType = 'offer', locationType, onLocationSelected, returnScreen } = route.params || {};
+  const requiresPickupOnly = locationType === 'source';
+  const requiresDestinationOnly = locationType === 'destination';
+  const confirmDisabled = locationType
+    ? requiresPickupOnly
+      ? !pickupLocation
+      : !destLocation
+    : !pickupLocation || !destLocation;
 
   useEffect(() => {
     initializeLocation();
@@ -253,8 +462,8 @@ export function LocationPickerScreen({ navigation, route }) {
 
   async function handleConfirmLocation() {
     if (locationType) {
-      const selectedLocation = pickupLocation || destLocation;
-      const selectedAddress = pickupAddress || destAddress;
+      const selectedLocation = requiresPickupOnly ? pickupLocation : destLocation;
+      const selectedAddress = requiresPickupOnly ? pickupAddress : destAddress;
       
       if (!selectedLocation) {
         Alert.alert('Error', `Please select ${locationType === 'source' ? 'pickup' : 'destination'} location`);
@@ -351,9 +560,10 @@ export function LocationPickerScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
+        <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={colors.accent.primary} />
           <Text style={styles.loadingText}>Loading map...</Text>
         </View>
       </SafeAreaView>
@@ -361,13 +571,14 @@ export function LocationPickerScreen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeft size={24} color="#fff" />
+          <ArrowLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {tripType === 'offer' ? 'Offer Ride' : 'Find Ride'}
@@ -378,7 +589,7 @@ export function LocationPickerScreen({ navigation, route }) {
       {currentLocation && (
         <WebView
           ref={webViewRef}
-          source={{ html: getDualPickerMapHTML(currentLocation.latitude, currentLocation.longitude) }}
+          source={{ html: getDualPickerMapHTML(currentLocation.latitude, currentLocation.longitude, isDark) }}
           style={styles.map}
           javaScriptEnabled={true}
           domStorageEnabled={true}
@@ -411,7 +622,7 @@ export function LocationPickerScreen({ navigation, route }) {
         onPress={centerOnCurrentLocation}
         activeOpacity={0.8}
       >
-        <Locate size={24} color="#fff" />
+        <Locate size={24} color={colors.text.primary} />
       </TouchableOpacity>
 
       <View style={styles.controls}>
@@ -447,7 +658,7 @@ export function LocationPickerScreen({ navigation, route }) {
             onPress={setCurrentAsNextPoint}
             activeOpacity={0.7}
           >
-            <MapPin size={18} color="#fff" />
+            <MapPin size={18} color={colors.text.primary} />
             <Text style={styles.secondaryText}>
               {!pickupLocation ? 'Use Current' : !destLocation ? 'Use Current' : 'Reset'}
             </Text>
@@ -458,31 +669,27 @@ export function LocationPickerScreen({ navigation, route }) {
             onPress={clearAllPoints}
             activeOpacity={0.7}
           >
-            <Navigation size={18} color="#fff" />
+            <Navigation size={18} color={colors.text.primary} />
             <Text style={styles.secondaryText}>Clear All</Text>
           </TouchableOpacity>
         </View>
-
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            (locationType ? !pickupLocation : !pickupLocation || !destLocation) &&
-              styles.confirmButtonDisabled,
+            confirmDisabled && styles.confirmButtonDisabled,
           ]}
           onPress={handleConfirmLocation}
-          disabled={locationType ? !pickupLocation : !pickupLocation || !destLocation}
+          disabled={confirmDisabled}
           activeOpacity={0.9}
         >
           <Check
             size={24}
-            color={
-              locationType ? !pickupLocation : !pickupLocation || !destLocation ? '#666' : '#000'
-            }
+            color={confirmDisabled ? colors.text.disabled : colors.button.primaryText}
           />
           <Text
             style={[
               styles.confirmButtonText,
-              (locationType ? !pickupLocation : !pickupLocation || !destLocation) && { color: '#666' },
+              confirmDisabled && { color: colors.text.disabled },
             ]}
           >
             {locationType ? 'Confirm Location' : 'Confirm Locations'}
@@ -492,197 +699,5 @@ export function LocationPickerScreen({ navigation, route }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#000',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerRight: {
-    width: 40,
-  },
-  map: {
-    flex: 1,
-  },
-  mapLoadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  instructionCard: {
-    position: 'absolute',
-    top: 80,
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  instructionText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    paddingTop: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.92)',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 10,
-    minHeight: 56,
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-  },
-  locationMarker: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  locationInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  locationLabel: {
-    color: '#888',
-    fontSize: 11,
-    marginBottom: 2,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  locationCoords: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '400',
-    lineHeight: 18,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  locateButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-    position: 'absolute',
-    bottom: 200,
-    right: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  secondaryButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    minHeight: 56,
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-  },
-  secondaryText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  confirmButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    minHeight: 56,
-    marginTop: 8,
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  confirmButtonDisabled: {
-    backgroundColor: '#333',
-    shadowOpacity: 0,
-  },
-  confirmButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-});
 
 export default LocationPickerScreen;

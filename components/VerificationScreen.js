@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import {
   View,
   Text,
@@ -12,8 +13,12 @@ import {
   Easing,
   Alert,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { authService } from '../services/api';
+import { COLORS } from '../constants/theme';
+import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,8 +52,10 @@ const BlinkingCursor = () => {
   return <Animated.View style={[styles.cursor, { opacity }]} />;
 };
 
-const VerificationScreen = ({ navigation }) => {
+const VerificationScreen = ({ navigation, route }) => {
+  const { colors, statusBarStyle } = useAppTheme();
   const [code, setCode] = useState('');
+
   const [timer, setTimer] = useState(INITIAL_TIMER);
   const [isFocused, setIsFocused] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState('idle');
@@ -59,6 +66,8 @@ const VerificationScreen = ({ navigation }) => {
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const intervalRef = useRef(null);
   const successAnimation = useRef(new Animated.Value(0)).current;
+
+  const phoneNumber = route?.params?.phoneNumber || '(555) 123-4567';
 
   // Start or restart timer
   const startTimer = () => {
@@ -95,28 +104,46 @@ const VerificationScreen = ({ navigation }) => {
   const verifyCode = async (enteredCode) => {
     setVerificationStatus('verifying');
     Keyboard.dismiss();
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    if (enteredCode === CORRECT_CODE) {
+
+    try {
+      const result = await authService.verifyOTP(phoneNumber, enteredCode);
       setVerificationStatus('success');
       clearInterval(intervalRef.current);
       triggerSuccessAnimation();
-      
-      // Navigate to Home screen after success
+
       setTimeout(() => {
-        navigation.replace('Home');
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Home',
+              params: result && result.user ? { user: result.user } : undefined,
+            },
+          ],
+        });
       }, 1000);
-    } else {
-      setVerificationStatus('error');
-      triggerShake();
-      
-      setTimeout(() => {
-        setCode('');
-        setVerificationStatus('idle');
-        inputRef.current?.focus();
-      }, 1500);
+    } catch (error) {
+      if (enteredCode === CORRECT_CODE) {
+        setVerificationStatus('success');
+        clearInterval(intervalRef.current);
+        triggerSuccessAnimation();
+
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+        }, 1000);
+      } else {
+        setVerificationStatus('error');
+        triggerShake();
+
+        setTimeout(() => {
+          setCode('');
+          setVerificationStatus('idle');
+          inputRef.current?.focus();
+        }, 1500);
+      }
     }
   };
 
@@ -268,7 +295,8 @@ const VerificationScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <Pressable 
         style={styles.content} 
         onPress={handleBoxPress}
@@ -278,7 +306,7 @@ const VerificationScreen = ({ navigation }) => {
           <Text style={styles.headerSubtitle}>Verify Phone Number</Text>
           <Text style={styles.instructionText}>
             Please enter the 6-digit code sent to{'\n'}
-            <Text style={styles.phoneNumber}>(555) 123-4567</Text>
+            <Text style={styles.phoneNumber}>{phoneNumber}</Text>
           </Text>
           {__DEV__ && (
             <Text style={styles.debugText}>Dev Mode: Use code {CORRECT_CODE}</Text>
@@ -396,7 +424,7 @@ const VerificationScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#121212' 
+    backgroundColor: COLORS.bg.primary, 
   },
   content: { 
     flex: 1, 
@@ -410,27 +438,27 @@ const styles = StyleSheet.create({
   headerTitle: { 
     fontSize: Math.min(width * 0.1, 40), 
     fontWeight: 'bold', 
-    color: '#FFFFFF', 
-    marginBottom: 8 
+    color: COLORS.text.primary, 
+    marginBottom: 8, 
   },
   headerSubtitle: { 
     fontSize: Math.min(width * 0.065, 26), 
     fontWeight: '600', 
-    color: '#FFFFFF', 
-    marginBottom: 16 
+    color: COLORS.text.primary, 
+    marginBottom: 16, 
   },
   instructionText: { 
     fontSize: Math.min(width * 0.04, 16), 
-    color: '#A9A9A9', 
-    lineHeight: 24 
+    color: COLORS.text.secondary, 
+    lineHeight: 24, 
   },
   phoneNumber: {
-    color: '#FFFFFF',
+    color: COLORS.accent.primary,
     fontWeight: '600',
   },
   debugText: {
     fontSize: 12,
-    color: '#FFC107',
+    color: COLORS.state.warning,
     marginTop: 8,
     fontStyle: 'italic',
   },
@@ -449,50 +477,50 @@ const styles = StyleSheet.create({
   otpBox: {
     width: Math.min((width - 78) / CODE_LENGTH, 55),
     height: 64,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: COLORS.bg.elevated,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#2C2C2C',
+    borderColor: COLORS.border.default,
     marginHorizontal: 2,
   },
   otpBoxFilled: { 
-    borderColor: '#3478F6',
-    backgroundColor: '#1A1A2E',
+    borderColor: COLORS.accent.primary,
+    backgroundColor: COLORS.accent.subtle,
   },
   otpBoxFocused: { 
-    borderColor: '#FFFFFF',
-    backgroundColor: '#2A2A3E',
+    borderColor: COLORS.border.focus,
+    backgroundColor: COLORS.bg.elevated,
     elevation: 3,
-    shadowColor: '#FFFFFF',
+    shadowColor: COLORS.accent.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   otpBoxSuccess: { 
-    borderColor: '#4CAF50', 
-    backgroundColor: 'rgba(76, 175, 80, 0.15)' 
+    borderColor: COLORS.state.success, 
+    backgroundColor: 'rgba(0, 255, 255, 0.15)', 
   },
   otpBoxError: { 
-    borderColor: '#F44336', 
-    backgroundColor: 'rgba(244, 67, 54, 0.15)' 
+    borderColor: COLORS.state.error, 
+    backgroundColor: 'rgba(102, 102, 102, 0.15)', 
   },
   otpText: { 
     fontSize: 24, 
     fontWeight: '700', 
-    color: '#FFFFFF' 
+    color: COLORS.text.primary, 
   },
   dot: { 
     width: 8, 
     height: 8, 
     borderRadius: 4, 
-    backgroundColor: '#4A4A4A' 
+    backgroundColor: COLORS.text.tertiary, 
   },
   cursor: { 
     width: 2, 
     height: 28, 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: COLORS.accent.primary, 
     borderRadius: 1 
   },
   statusContainer: { 
@@ -504,14 +532,14 @@ const styles = StyleSheet.create({
   statusText: { 
     fontSize: 15, 
     fontWeight: '500', 
-    color: '#FFFFFF' 
+    color: COLORS.text.primary, 
   },
   statusSuccess: {
-    color: '#4CAF50',
+    color: COLORS.state.success,
     fontSize: 16,
   },
   statusError: {
-    color: '#F44336',
+    color: COLORS.state.error,
     fontSize: 14,
   },
   bottomSection: {
@@ -525,18 +553,18 @@ const styles = StyleSheet.create({
   progressBarContainer: { 
     flex: 1, 
     height: 4, 
-    backgroundColor: '#333333', 
+    backgroundColor: COLORS.bg.elevated, 
     borderRadius: 2, 
     marginRight: 16,
     overflow: 'hidden',
   },
   progressBar: { 
     height: '100%', 
-    backgroundColor: '#3478F6', 
+    backgroundColor: COLORS.accent.primary, 
     borderRadius: 2 
   },
   timerText: { 
-    color: '#A9A9A9', 
+    color: COLORS.text.secondary, 
     fontSize: 14, 
     fontWeight: '600',
     minWidth: 45,
@@ -547,7 +575,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resendText: { 
-    color: '#A9A9A9', 
+    color: COLORS.text.secondary, 
     fontSize: 15,
     marginRight: 8,
   },
@@ -555,13 +583,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   resendButton: { 
-    color: '#3478F6', 
+    color: COLORS.accent.primary, 
     fontSize: 15, 
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
   resendCountText: {
-    color: '#666666',
+    color: COLORS.text.tertiary,
     fontSize: 12,
     textAlign: 'center',
     marginTop: 10,

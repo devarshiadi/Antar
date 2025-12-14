@@ -1,18 +1,20 @@
 // Minimalist Monochrome Theme
-export const COLORS = {
+import { Appearance } from 'react-native';
+
+export const DARK_COLORS = {
   // Base
   bg: {
     primary: '#000000',
-    secondary: '#0a0a0a',
-    elevated: '#151515',
-    card: '#1a1a1a',
+    secondary: '#000000',
+    elevated: '#101010',
+    card: '#0B0B0B',
   },
   
   // Borders & Dividers
   border: {
-    default: '#2a2a2a',
-    subtle: '#1f1f1f',
-    strong: '#3a3a3a',
+    default: '#1a1a1a',
+    subtle: '#0f0f0f',
+    strong: '#262626',
     focus: '#ffffff',
   },
   
@@ -26,17 +28,65 @@ export const COLORS = {
   
   // Accents (Monochrome)
   accent: {
-    primary: '#ffffff',
-    subtle: '#333333',
+    primary: '#2e7d32',
+    subtle: '#111111',
+  },
+  
+  // Button system
+  button: {
+    primaryBg: '#2e7d32',
+    primaryText: '#ffffff',
+    secondaryBg: 'transparent',
+    secondaryText: '#2e7d32',
+    secondaryBorder: '#2e7d32',
   },
   
   // States (Monochrome approach)
   state: {
-    success: '#ffffff',
+    success: '#2e7d32',
     warning: '#888888',
-    error: '#666666',
+    error: '#F44336',
   },
 };
+
+export const LIGHT_COLORS = {
+  bg: {
+    primary: '#f5f5f5',
+    secondary: '#ffffff',
+    elevated: '#ffffff',
+    card: '#ffffff',
+  },
+  border: {
+    default: '#e0e0e0',
+    subtle: '#f0f0f0',
+    strong: '#cfcfcf',
+    focus: '#111111',
+  },
+  text: {
+    primary: '#111111',
+    secondary: '#555555',
+    tertiary: '#777777',
+    disabled: '#aaaaaa',
+  },
+  accent: {
+    primary: DARK_COLORS.accent.primary,
+    subtle: '#e6f7f7',
+  },
+  button: {
+    primaryBg: DARK_COLORS.button.primaryBg,
+    primaryText: '#050B1C',
+    secondaryBg: 'transparent',
+    secondaryText: DARK_COLORS.button.primaryBg,
+    secondaryBorder: DARK_COLORS.button.primaryBg,
+  },
+  state: {
+    success: DARK_COLORS.state.success,
+    warning: '#888888',
+    error: '#c62828',
+  },
+};
+
+export const COLORS = Appearance.getColorScheme() === 'light' ? LIGHT_COLORS : DARK_COLORS;
 
 // Typography Scale (Minimalist - Only 4 sizes)
 export const TYPOGRAPHY = {

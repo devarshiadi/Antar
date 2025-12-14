@@ -12,9 +12,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Clock, MessageCircle } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+import {
+  getStoredRides,
+  updateRide,
+  getRideById,
+  addRideRequest,
+  updateRideRequest,
+  getRideRequests,
+} from '../../helpers/rides-storage';
+import { addNotification, getNotificationsForUser } from '../../helpers/notifications-storage';
+import { useAppTheme } from '../../helpers/use-app-theme';
 
 export function MatchesScreenNew({ navigation, route }) {
-  const { city } = route.params || {};
+  const { city, viewerRole = 'offerer', tripType, source, destination, currentUser } = route.params || {};
+  const { colors, statusBarStyle } = useAppTheme();
+  const isSeekerView = viewerRole === 'seeker';
   
   const initialData = [
     { id: 1, name: 'Rajesh Kumar', rating: 4.8, from: 'MG Road', to: 'Whitefield', time: '8:30 AM', price: 120, seats: 2, status: 'available' },
@@ -28,47 +40,187 @@ export function MatchesScreenNew({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState([]);
+  const [rideRequests, setRideRequests] = useState([]);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setRiders(initialData);
-      setLoading(false);
-    }, 350);
-    return () => clearTimeout(t);
-  }, []);
-
-  function onRefresh() {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRiders((prev) => [...prev]);
-      setRefreshing(false);
-    }, 500);
+  function normalizeText(value) {
+    if (!value || typeof value !== 'string') {
+      return '';
+    }
+    return value.trim().toLowerCase();
   }
 
-  function toggleSelect(id) {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
+  function isRideMatch(ride, sourceParam, destinationParam) {
+    const rideFrom = normalizeText(ride.from);
+    const rideTo = normalizeText(ride.to);
+    const sourceTerm = normalizeText(sourceParam && (sourceParam.address || sourceParam.from));
+    const destTerm = normalizeText(destinationParam && (destinationParam.address || destinationParam.to));
+    const fromMatches = !sourceTerm || rideFrom.includes(sourceTerm) || sourceTerm.includes(rideFrom);
+    const toMatches = !destTerm || rideTo.includes(destTerm) || destTerm.includes(rideTo);
+    return fromMatches && toMatches;
+  }
+
+  async function loadRiders(isInitial) {
+    if (isInitial) {
+      setLoading(true);
+    }
+    try {
+      const [storedRides, storedRequests] = await Promise.all([getStoredRides(), getRideRequests()]);
+      setRideRequests(storedRequests);
+      let combined = [...initialData, ...storedRides];
+      if (isSeekerView) {
+        combined = combined.filter((ride) => isRideMatch(ride, source, destination));
+      }
+      const annotated = combined.map((ride) => {
+        if (!currentUser) {
+          return ride;
+        }
+        const hasPendingRequest = storedRequests.some(
+          (request) => request.rideId === ride.id && request.seekerId === currentUser.id && request.status === 'pending',
+        );
+        if (!hasPendingRequest) {
+          return ride;
+        }
+        return {
+          ...ride,
+          requestedByUser: true,
+        };
+      });
+      setRiders(annotated);
+    } catch (error) {
+      setRiders(initialData);
+    } finally {
+      if (isInitial) {
+        setLoading(false);
+      }
+      setRefreshing(false);
     }
   }
 
-  function handleRequest() {
-    if (selectedIds.length === 0) return;
-    setRiders((prev) =>
-      prev.map((r) => (selectedIds.includes(r.id) && r.status === 'available' ? { ...r, status: 'pending' } : r))
-    );
-    setSelectedIds([]);
+  useEffect(() => {
+    loadRiders(true);
+  }, [isSeekerView, source, destination, currentUser]);
+
+  function onRefresh() {
+    setRefreshing(true);
+    loadRiders(false);
   }
 
-  function handleChat(riderId) {
-    navigation.navigate('Chat', { matchId: riderId });
+  function toggleSelect(id) {
+    if (!isSeekerView) {
+      return;
+    }
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id]));
+  }
+
+  async function handleRequest() {
+    if (!isSeekerView || selectedIds.length === 0) {
+      return;
+    }
+    const passengerName = currentUser?.name?.trim() || 'Passenger';
+    const passengerId = currentUser?.id || `seeker-${Date.now()}`;
+    const targetIds = [...selectedIds];
+    setRiders((prev) =>
+      prev.map((rider) =>
+        targetIds.includes(rider.id) && rider.status === 'available'
+          ? { ...rider, status: 'pending', requestedByUser: true }
+          : rider,
+      ),
+    );
+    setSelectedIds([]);
+    await Promise.all(
+      targetIds.map(async (rideId) => {
+        const ride = await getRideById(rideId);
+        if (!ride || ride.status !== 'available') {
+          return;
+        }
+        await updateRide(rideId, { status: 'pending' });
+        const request = await addRideRequest({
+          rideId,
+          driverId: ride.driverId || ride.id,
+          driverName: ride.driverName || ride.name,
+          seekerId: passengerId,
+          seekerName: passengerName,
+          rideSummary: {
+            from: ride.from,
+            to: ride.to,
+            time: ride.time,
+          },
+        });
+        await addNotification({
+          rideId,
+          requestId: request.id,
+          type: 'request',
+          title: 'Ride request received',
+          message: `${passengerName} wants to join your ride ${ride.from} → ${ride.to}`,
+          recipientId: ride.driverId || ride.id,
+          seekerId: passengerId,
+          counterpartyName: passengerName,
+          routeSummary: `${ride.from} → ${ride.to}`,
+        });
+      }),
+    );
+    loadRiders(false);
+  }
+
+  function handleChat(rider) {
+    if (rider.status !== 'accepted') {
+      return;
+    }
+    navigation.navigate('Chat', {
+      matchId: rider.id,
+      contact: {
+        name: rider.name,
+        rating: rider.rating,
+        route: `${rider.from} → ${rider.to}`,
+        time: rider.time,
+        fare: rider.price,
+      },
+    });
   }
 
   function handleCancelPending(riderId) {
     setRiders((prev) =>
       prev.map((r) => (r.id === riderId && r.status === 'pending' ? { ...r, status: 'available' } : r))
     );
+  }
+
+  async function handleAcceptPending(riderId, accepted) {
+    if (isSeekerView) {
+      return;
+    }
+    const updatedStatus = accepted ? 'accepted' : 'available';
+    setRiders((prev) =>
+      prev.map((rider) =>
+        rider.id === riderId && rider.status === 'pending'
+          ? { ...rider, status: updatedStatus, requestedByUser: false }
+          : rider,
+      ),
+    );
+    await updateRide(riderId, { status: updatedStatus });
+    const pendingRequest = rideRequests.find(
+      (request) => request.rideId === riderId && request.status === 'pending',
+    );
+    if (pendingRequest) {
+      await updateRideRequest(pendingRequest.id, { status: accepted ? 'accepted' : 'rejected' });
+      await addNotification({
+        rideId: riderId,
+        requestId: pendingRequest.id,
+        type: accepted ? 'accept' : 'reject',
+        title: accepted ? 'Request accepted' : 'Request rejected',
+        message: accepted
+          ? `${pendingRequest.driverName || 'Driver'} accepted your ride request.`
+          : `${pendingRequest.driverName || 'Driver'} could not confirm your request.`,
+        recipientId: pendingRequest.seekerId,
+        seekerId: pendingRequest.seekerId,
+        allowChat: accepted,
+        counterpartyName: pendingRequest.driverName || 'Driver',
+        routeSummary:
+          pendingRequest.rideSummary && pendingRequest.rideSummary.from && pendingRequest.rideSummary.to
+            ? `${pendingRequest.rideSummary.from} → ${pendingRequest.rideSummary.to}`
+            : undefined,
+      });
+    }
+    loadRiders(false);
   }
 
   const RiderCard = ({ rider }) => {
@@ -79,12 +231,9 @@ export function MatchesScreenNew({ navigation, route }) {
 
     return (
       <TouchableOpacity
-        style={[
-          styles.riderCard,
-          isSelected && styles.riderCardSelected,
-        ]}
+        style={[styles.riderCard, isSelected && styles.riderCardSelected]}
         onPress={() => isAvailable && toggleSelect(rider.id)}
-        disabled={!isAvailable}
+        disabled={!isSeekerView || !isAvailable}
       >
         <View style={styles.riderHeader}>
           <Text style={styles.riderName}>{rider.name}</Text>
@@ -103,7 +252,9 @@ export function MatchesScreenNew({ navigation, route }) {
             {isPending && (
               <>
                 <Text style={styles.riderDetailDot}>•</Text>
-                <Text style={[styles.riderDetail, styles.statusPending]}>PENDING</Text>
+                <Text style={[styles.riderDetail, styles.statusPending]}>
+                  {isSeekerView ? 'REQUESTED' : 'PENDING'}
+                </Text>
               </>
             )}
             {isAccepted && (
@@ -119,20 +270,34 @@ export function MatchesScreenNew({ navigation, route }) {
         {isPending && (
           <View style={styles.pendingMessage}>
             <Clock size={14} color={COLORS.text.tertiary} />
-            <Text style={styles.pendingText}>Waiting for response</Text>
-            <TouchableOpacity style={styles.cancelPending} onPress={() => handleCancelPending(rider.id)}>
-              <Text style={styles.cancelPendingText}>Cancel</Text>
-            </TouchableOpacity>
+            <Text style={styles.pendingText}>
+              {isSeekerView ? 'Waiting for driver to respond' : 'Traveler requested to join'}
+            </Text>
+            {!isSeekerView && (
+              <View style={styles.pendingActions}>
+                <TouchableOpacity style={styles.acceptPending} onPress={() => handleAcceptPending(rider.id, true)}>
+                  <Text style={styles.acceptPendingText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelPending} onPress={() => handleAcceptPending(rider.id, false)}>
+                  <Text style={styles.cancelPendingText}>Reject</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
         {isAccepted && (
           <TouchableOpacity
             style={styles.chatButton}
-            onPress={() => handleChat(rider.id)}
+            onPress={() => handleChat(rider)}
+            accessibilityRole="button"
+            accessibilityLabel={`Open chat with ${rider.name}`}
+            activeOpacity={0.9}
           >
-            <MessageCircle size={16} color={COLORS.text.primary} />
-            <Text style={styles.chatButtonText}>Chat</Text>
+            <MessageCircle size={16} color={COLORS.bg.primary} />
+            <Text style={styles.chatButtonText}>
+              {isSeekerView ? 'Chat with driver' : 'Coordinate'}
+            </Text>
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -147,18 +312,18 @@ export function MatchesScreenNew({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.text.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg.primary }]}>
+        <ActivityIndicator size="large" color={colors.text.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Available Riders</Text>
+        <Text style={styles.headerTitle}>{isSeekerView ? 'Available Rides' : 'Ride Requests'}</Text>
         <Text style={styles.headerSubtitle}>
           {city ? city + ' • ' : ''}
           {counts.available} available • {counts.pending} pending • {counts.accepted} accepted
@@ -190,11 +355,11 @@ export function MatchesScreenNew({ navigation, route }) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {selectedIds.length > 0 && (
+      {isSeekerView && selectedIds.length > 0 && (
         <View style={styles.bottomActions}>
           <TouchableOpacity style={styles.requestButton} onPress={handleRequest}>
             <Text style={styles.requestButtonText}>
-              REQUEST {selectedIds.length} RIDE{selectedIds.length > 1 ? 'S' : ''}
+              SEND REQUEST TO {selectedIds.length} DRIVER{selectedIds.length > 1 ? 'S' : ''}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -347,13 +512,14 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
     marginTop: SPACING.sm,
     paddingVertical: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border.subtle,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.text.primary,
   },
   chatButtonText: {
     ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-    fontWeight: '600',
+    color: COLORS.bg.primary,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   bottomActions: {
     flexDirection: 'row',
@@ -367,7 +533,7 @@ const styles = StyleSheet.create({
   },
   requestButton: {
     flex: 1,
-    backgroundColor: COLORS.text.primary,
+    backgroundColor: COLORS.button.primaryBg,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.sm,
     alignItems: 'center',
@@ -375,7 +541,7 @@ const styles = StyleSheet.create({
   requestButtonText: {
     ...TYPOGRAPHY.body,
     fontWeight: '700',
-    color: COLORS.bg.primary,
+    color: COLORS.button.primaryText,
     letterSpacing: 0.5,
   },
   cancelButton: {

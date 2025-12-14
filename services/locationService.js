@@ -1,15 +1,14 @@
 import * as Location from 'expo-location';
 import { userService } from './api';
 
-class LocationService {
-  constructor() {
-    this.watchId = null;
-    this.isTracking = false;
-    this.updateInterval = null;
-  }
+function createLocationService() {
+  let watchId = null;
+  let isTracking = false;
+  let updateInterval = null;
+  let hasLoggedUpdateError = false;
 
   // Request location permissions
-  async requestPermissions() {
+  async function requestPermissions() {
     try {
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       
@@ -30,7 +29,7 @@ class LocationService {
   }
 
   // Check if permissions are granted
-  async hasPermissions() {
+  async function hasPermissions() {
     const foreground = await Location.getForegroundPermissionsAsync();
     const background = await Location.getBackgroundPermissionsAsync();
     
@@ -41,7 +40,7 @@ class LocationService {
   }
 
   // Get current location once
-  async getCurrentLocation() {
+  async function getCurrentLocation() {
     try {
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
@@ -62,22 +61,23 @@ class LocationService {
   }
 
   // Start watching location in real-time
-  async startTracking(onLocationUpdate, isActiveTrip = false) {
-    if (this.isTracking) {
+  async function startTracking(onLocationUpdate, isActiveTrip = false) {
+    if (isTracking) {
       console.log('Already tracking');
       return;
     }
 
     try {
-      const permissions = await this.hasPermissions();
+      const permissions = await hasPermissions();
       if (!permissions.foreground) {
-        await this.requestPermissions();
+        await requestPermissions();
       }
 
-      this.isTracking = true;
+      isTracking = true;
+      hasLoggedUpdateError = false;
 
       // Watch position changes
-      this.watchId = await Location.watchPositionAsync(
+      watchId = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 5000, // Update every 5 seconds
@@ -98,11 +98,14 @@ class LocationService {
             onLocationUpdate(locationData);
           }
 
-          // Send to backend every update
+          // Send to backend every update; if offline or server fails, log once and continue silently
           try {
             await userService.updateLocation(locationData);
           } catch (error) {
-            console.error('Failed to update location on server:', error);
+            if (!hasLoggedUpdateError) {
+              console.log('Failed to update location on server. Tracking continues locally.');
+              hasLoggedUpdateError = true;
+            }
           }
         }
       );
@@ -110,29 +113,29 @@ class LocationService {
       console.log('Location tracking started');
     } catch (error) {
       console.error('Start tracking error:', error);
-      this.isTracking = false;
+      isTracking = false;
       throw error;
     }
   }
 
   // Stop watching location
-  stopTracking() {
-    if (this.watchId) {
-      this.watchId.remove();
-      this.watchId = null;
+  function stopTracking() {
+    if (watchId) {
+      watchId.remove();
+      watchId = null;
     }
     
-    if (this.updateInterval) {
-      clearInterval(this.updateInterval);
-      this.updateInterval = null;
+    if (updateInterval) {
+      clearInterval(updateInterval);
+      updateInterval = null;
     }
 
-    this.isTracking = false;
+    isTracking = false;
     console.log('Location tracking stopped');
   }
 
   // Get address from coordinates (reverse geocoding)
-  async getAddressFromCoords(latitude, longitude) {
+  async function getAddressFromCoords(latitude, longitude) {
     try {
       const addresses = await Location.reverseGeocodeAsync({
         latitude,
@@ -159,7 +162,7 @@ class LocationService {
   }
 
   // Get coordinates from address (geocoding)
-  async getCoordsFromAddress(address) {
+  async function getCoordsFromAddress(address) {
     try {
       const locations = await Location.geocodeAsync(address);
 
@@ -177,22 +180,35 @@ class LocationService {
     }
   }
 
+  function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+  }
+
   // Calculate distance between two points
-  calculateDistance(lat1, lon1, lat2, lon2) {
+  function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Earth's radius in km
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
-  deg2rad(deg) {
-    return deg * (Math.PI / 180);
-  }
+  return {
+    requestPermissions,
+    hasPermissions,
+    getCurrentLocation,
+    startTracking,
+    stopTracking,
+    getAddressFromCoords,
+    getCoordsFromAddress,
+    calculateDistance,
+  };
 }
 
-export default new LocationService();
+export const locationService = createLocationService();
+
+export default locationService;

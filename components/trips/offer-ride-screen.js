@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,11 +21,18 @@ import {
   User,
   Phone,
   Hash,
+  DollarSign,
 } from 'lucide-react-native';
+import { COLORS } from '../../constants/theme';
+import { addRide } from '../../helpers/rides-storage';
+import { saveGlobalRoute, loadGlobalRoute } from '../../helpers/location-storage';
+import { useAppTheme } from '../../helpers/use-app-theme';
 
 const STORAGE_KEY = '@offer_ride_user_data';
 
 export function OfferRideScreen({ navigation, route }) {
+  const { colors, statusBarStyle } = useAppTheme();
+  const currentUser = route.params?.currentUser || null;
   const [vehicleType, setVehicleType] = useState('car');
   const [seatCount, setSeatCount] = useState(2);
   const [sourceLocation, setSourceLocation] = useState(null);
@@ -33,10 +41,23 @@ export function OfferRideScreen({ navigation, route }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [loading, setLoading] = useState(true);
+  const [price, setPrice] = useState('');
 
   useEffect(() => {
     loadUserData();
   }, []);
+
+  useEffect(() => {
+    if (!route.params) {
+      return;
+    }
+    if (route.params.source && !sourceLocation) {
+      setSourceLocation(route.params.source);
+    }
+    if (route.params.destination && !destinationLocation) {
+      setDestinationLocation(route.params.destination);
+    }
+  }, [route.params?.source, route.params?.destination, sourceLocation, destinationLocation]);
 
   useEffect(() => {
     if (route.params?.selectedLocation && route.params?.locationType) {
@@ -48,6 +69,29 @@ export function OfferRideScreen({ navigation, route }) {
       navigation.setParams({ selectedLocation: undefined, locationType: undefined });
     }
   }, [route.params?.selectedLocation]);
+
+  useEffect(() => {
+    if (sourceLocation || destinationLocation) {
+      return;
+    }
+    async function hydrateRouteFromStorage() {
+      const stored = await loadGlobalRoute();
+      if (!stored) {
+        return;
+      }
+      if (stored.source && !sourceLocation) {
+        setSourceLocation(stored.source);
+      }
+      if (stored.destination && !destinationLocation) {
+        setDestinationLocation(stored.destination);
+      }
+    }
+    hydrateRouteFromStorage();
+  }, [sourceLocation, destinationLocation]);
+
+  useEffect(() => {
+    saveGlobalRoute(sourceLocation, destinationLocation);
+  }, [sourceLocation, destinationLocation]);
 
   async function loadUserData() {
     try {
@@ -62,6 +106,9 @@ export function OfferRideScreen({ navigation, route }) {
           setSeatCount(1);
         } else {
           setSeatCount(data.seatCount || 2);
+        }
+        if (typeof data.price === 'number' || typeof data.price === 'string') {
+          setPrice(String(data.price));
         }
       }
     } catch (error) {
@@ -79,6 +126,7 @@ export function OfferRideScreen({ navigation, route }) {
         vehicleNumber,
         vehicleType,
         seatCount,
+        price,
       };
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     } catch (error) {
@@ -126,6 +174,12 @@ export function OfferRideScreen({ navigation, route }) {
       Alert.alert('Missing Information', 'Please enter your vehicle number.', [{ text: 'OK' }]);
       return;
     }
+    const trimmedPrice = price.trim();
+    const numericPrice = parseFloat(trimmedPrice);
+    if (!trimmedPrice || Number.isNaN(numericPrice) || numericPrice <= 0) {
+      Alert.alert('Missing Information', 'Please enter a valid price for your ride.', [{ text: 'OK' }]);
+      return;
+    }
     if (!sourceLocation || !destinationLocation) {
       Alert.alert('Missing Information', 'Please select both pickup and destination locations.', [
         { text: 'OK' },
@@ -135,12 +189,37 @@ export function OfferRideScreen({ navigation, route }) {
 
     await saveUserData();
 
+    const rideId = Date.now();
+    const ride = {
+      id: rideId,
+      driverId: currentUser?.id ?? `driver-${rideId}`,
+      driverPhone: phoneNumber,
+      driverName: userName || currentUser?.name || 'Driver',
+      name: userName || currentUser?.name || 'Driver',
+      rating: currentUser?.rating ?? 4.8,
+      from: sourceLocation.address || 'Pickup',
+      to: destinationLocation.address || 'Drop',
+      time: new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }),
+      price: numericPrice,
+      seats: seatCount,
+      vehicleType,
+      vehicleNumber,
+      sourceLocation,
+      destinationLocation,
+      status: 'available',
+      isStored: true,
+    };
+
+    await addRide(ride);
+
     navigation.navigate('Matches', {
       tripType: 'offer',
       vehicleType,
       seatCount,
+      price: numericPrice,
       source: sourceLocation,
       destination: destinationLocation,
+      currentUser,
       userInfo: {
         name: userName,
         phone: phoneNumber,
@@ -149,14 +228,21 @@ export function OfferRideScreen({ navigation, route }) {
     });
   }
 
+  function handleMyRidesPress() {
+    navigation.navigate('MyRides', {
+      currentUser,
+    });
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeft size={24} color="#fff" />
+          <ArrowLeft size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Offer a Ride</Text>
         <View style={styles.headerRight} />
@@ -165,7 +251,7 @@ export function OfferRideScreen({ navigation, route }) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Information</Text>
-          
+
           <View style={styles.inputContainer}>
             <User size={20} color="#888" />
             <TextInput
@@ -264,7 +350,7 @@ export function OfferRideScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>Available Seats</Text>
           {vehicleType === 'bike' ? (
             <View style={styles.seatInfo}>
-              <Users size={20} color="#4CAF50" />
+              <Users size={20} color={COLORS.accent.primary} />
               <Text style={styles.seatInfoText}>1 seat (pillion rider)</Text>
             </View>
           ) : (
@@ -294,8 +380,23 @@ export function OfferRideScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Price per Seat</Text>
+          <View style={styles.inputContainer}>
+            <DollarSign size={20} color="#888" />
+            <TextInput
+              style={styles.input}
+              placeholder="₹ 100"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+              value={price}
+              onChangeText={setPrice}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Trip Route</Text>
-          
+
           <TouchableOpacity
             style={styles.locationInput}
             onPress={handleSourceSelect}
@@ -308,7 +409,7 @@ export function OfferRideScreen({ navigation, route }) {
                 {sourceLocation ? sourceLocation.address : 'Select pickup point'}
               </Text>
             </View>
-            <Navigation size={20} color="#4CAF50" />
+            <Navigation size={20} color={COLORS.accent.primary} />
           </TouchableOpacity>
 
           <View style={styles.locationDivider} />
@@ -322,7 +423,9 @@ export function OfferRideScreen({ navigation, route }) {
             <View style={styles.locationInputContent}>
               <Text style={styles.locationLabel}>Destination</Text>
               <Text style={styles.locationValue}>
-                {destinationLocation ? destinationLocation.address : 'Select destination'}
+                {destinationLocation
+                  ? destinationLocation.address
+                  : 'Select destination'}
               </Text>
             </View>
             <MapPin size={20} color="#F44336" />
@@ -331,20 +434,29 @@ export function OfferRideScreen({ navigation, route }) {
 
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            💡 Offering a ride helps reduce traffic and pollution while sharing travel costs
+            Offering a ride helps reduce traffic and pollution while sharing
+            travel costs
           </Text>
         </View>
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirm}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.confirmButtonText}>Confirm & Publish Ride</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirm}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.confirmButtonText}>Confirm & Publish Ride</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleMyRidesPress}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.secondaryButtonText}>Ride posts</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -352,7 +464,7 @@ export function OfferRideScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: COLORS.bg.primary,
   },
   header: {
     flexDirection: 'row',
@@ -365,14 +477,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: COLORS.text.primary,
   },
   headerRight: {
     width: 40,
@@ -393,14 +505,14 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     marginBottom: 12,
     minHeight: 56,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: COLORS.border.default,
     gap: 12,
   },
   input: {
@@ -415,18 +527,18 @@ const styles = StyleSheet.create({
   },
   vehicleOption: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 140,
     borderWidth: 2,
-    borderColor: '#1a1a1a',
+    borderColor: COLORS.border.default,
   },
   vehicleOptionActive: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
+    backgroundColor: COLORS.button.primaryBg,
+    borderColor: COLORS.button.primaryBg,
   },
   radioOuter: {
     width: 24,
@@ -456,7 +568,7 @@ const styles = StyleSheet.create({
   seatInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     padding: 16,
     borderRadius: 12,
     gap: 12,
@@ -472,18 +584,18 @@ const styles = StyleSheet.create({
   },
   seatButton: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     borderRadius: 12,
     paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 64,
     borderWidth: 2,
-    borderColor: '#1a1a1a',
+    borderColor: COLORS.border.default,
   },
   seatButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: COLORS.accent.primary,
+    borderColor: COLORS.accent.primary,
   },
   seatButtonText: {
     fontSize: 20,
@@ -496,7 +608,7 @@ const styles = StyleSheet.create({
   locationInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.bg.card,
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -509,7 +621,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   locationDotSource: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.accent.primary,
   },
   locationDotDestination: {
     backgroundColor: '#F44336',
@@ -530,32 +642,30 @@ const styles = StyleSheet.create({
   },
   locationDivider: {
     height: 1,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: COLORS.border.default,
     marginLeft: 24,
     marginVertical: 12,
   },
   infoBox: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.2)',
+    borderColor: 'rgba(0, 255, 255, 0.25)',
   },
   infoText: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: COLORS.accent.primary,
     lineHeight: 20,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#000',
-    borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
+    paddingTop: 8,
+    paddingBottom: 24,
+    gap: 8,
   },
   confirmButton: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.button.primaryBg,
     borderRadius: 12,
     paddingVertical: 18,
     alignItems: 'center',
@@ -563,9 +673,25 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   confirmButtonText: {
-    color: '#000',
+    color: COLORS.button.primaryText,
     fontSize: 16,
     fontWeight: '700',
+  },
+  secondaryButton: {
+    backgroundColor: COLORS.button.secondaryBg,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.button.secondaryBorder,
+  },
+  secondaryButtonText: {
+    color: COLORS.button.secondaryText,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
 

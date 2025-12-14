@@ -19,10 +19,13 @@ import {
   Shield,
   HelpCircle,
   LogOut,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+import { useAppTheme } from '../helpers/use-app-theme';
 
 function ProfileScreenNew({ navigation }) {
+  const { colors, statusBarStyle } = useAppTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationSharing, setLocationSharing] = useState(false);
 
@@ -54,12 +57,17 @@ function ProfileScreenNew({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg.primary} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')} activeOpacity={0.8}>
+          <ArrowLeft size={20} color={COLORS.text.primary} />
+          <Text style={styles.backLabel}>Home</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView
