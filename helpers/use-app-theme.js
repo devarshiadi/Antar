@@ -1,4 +1,8 @@
 import { useColorScheme } from 'react-native';
+<<<<<<< HEAD
+=======
+import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme } from '@react-navigation/native';
+>>>>>>> aditya mule delay zala ahe sagla
 import { DARK_COLORS, LIGHT_COLORS } from '../constants/theme';
 
 export function getAppTheme(colorScheme) {
@@ -6,9 +10,18 @@ export function getAppTheme(colorScheme) {
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
   const statusBarStyle = isDark ? 'light-content' : 'dark-content';
 
+<<<<<<< HEAD
   const navigationTheme = {
     dark: isDark,
     colors: {
+=======
+  const baseNavigationTheme = isDark ? NavigationDarkTheme : NavigationDefaultTheme;
+  const navigationTheme = {
+    ...baseNavigationTheme,
+    dark: isDark,
+    colors: {
+      ...baseNavigationTheme.colors,
+>>>>>>> aditya mule delay zala ahe sagla
       primary: colors.accent.primary,
       background: colors.bg.primary,
       card: colors.bg.secondary,

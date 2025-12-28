@@ -1,6 +1,11 @@
 import { StyleSheet } from 'react-native';
 
+<<<<<<< HEAD
 export const styles = StyleSheet.create({
+=======
+export function getHomeStyles(theme) {
+  return StyleSheet.create({
+>>>>>>> aditya mule delay zala ahe sagla
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -34,6 +39,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   allowButton: {
+<<<<<<< HEAD
     backgroundColor: '#4CAF50',
   },
   askButton: {
@@ -41,19 +47,39 @@ export const styles = StyleSheet.create({
   },
   askButtonText: {
     color: '#fff',
+=======
+    backgroundColor: theme.accent,
+  },
+  askButton: {
+    backgroundColor: theme.secondaryCard,
+  },
+  askButtonText: {
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
     fontSize: 15,
   },
   cancelButton: {
+<<<<<<< HEAD
     backgroundColor: '#333',
   },
   allowButtonText: {
     color: '#fff',
+=======
+    backgroundColor: theme.secondaryCard,
+  },
+  allowButtonText: {
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
     fontSize: 15,
   },
   cancelButtonText: {
+<<<<<<< HEAD
     color: '#fff',
+=======
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
     fontSize: 15,
   },
@@ -86,7 +112,11 @@ export const styles = StyleSheet.create({
   },
   permissionPillPrimary: {},
   permissionPillPrimaryText: {
+<<<<<<< HEAD
     color: '#000',
+=======
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '700',
     fontSize: 15,
   },
@@ -149,13 +179,21 @@ export const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
+<<<<<<< HEAD
     borderColor: '#050B1C',
+=======
+    borderColor: theme.background,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   badge: {
     position: 'absolute',
     top: -5,
     right: -8,
+<<<<<<< HEAD
     backgroundColor: '#f00',
+=======
+    backgroundColor: theme.critical,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: 10,
     width: 18,
     height: 18,
@@ -163,7 +201,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
+<<<<<<< HEAD
     color: '#fff',
+=======
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -200,7 +242,11 @@ export const styles = StyleSheet.create({
     marginRight: 12,
   },
   locationDotSource: {
+<<<<<<< HEAD
     backgroundColor: '#4CAF50',
+=======
+    backgroundColor: theme.accent,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   locationDotDestination: {
     backgroundColor: '#F44336',
@@ -237,7 +283,11 @@ export const styles = StyleSheet.create({
   },
   locationManualChip: {
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: '#4CAF50',
+=======
+    borderColor: theme.accent,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -245,7 +295,11 @@ export const styles = StyleSheet.create({
   locationManualChipText: {
     fontSize: 11,
     fontWeight: '600',
+<<<<<<< HEAD
     color: '#4CAF50',
+=======
+    color: theme.accent,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   quickActions: {
     flexDirection: 'row',
@@ -261,10 +315,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryAction: {
+<<<<<<< HEAD
     backgroundColor: '#fff',
   },
   secondaryAction: {
     backgroundColor: '#1a1a1a',
+=======
+    backgroundColor: theme.surface,
+  },
+  secondaryAction: {
+    backgroundColor: theme.card,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   actionTitle: {
     fontSize: 16,
@@ -319,7 +380,11 @@ export const styles = StyleSheet.create({
   },
   messageCurrentCard: {
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: '#2a2a2a',
+=======
+    borderColor: theme.divider,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   currentChatDot: {
     width: 8,
@@ -348,7 +413,11 @@ export const styles = StyleSheet.create({
     borderRadius: 999,
   },
   liveBadgeText: {
+<<<<<<< HEAD
     color: '#000',
+=======
+    color: theme.background,
+>>>>>>> aditya mule delay zala ahe sagla
     fontSize: 10,
     fontWeight: '700',
   },
@@ -384,7 +453,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   oldChatsText: {
+<<<<<<< HEAD
     color: '#fff',
+=======
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '700',
     fontSize: 14,
     textTransform: 'uppercase',
@@ -418,7 +491,11 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     opacity: 0.4,
     marginBottom: 12,
+<<<<<<< HEAD
     backgroundColor: '#5a5a5a',
+=======
+    backgroundColor: theme.divider,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   messagesOverlayHeader: {
     flexDirection: 'row',
@@ -454,7 +531,11 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     borderBottomWidth: 1,
+<<<<<<< HEAD
     borderBottomColor: '#2a2a2a',
+=======
+    borderBottomColor: theme.divider,
+>>>>>>> aditya mule delay zala ahe sagla
     gap: 12,
   },
   messageListInfo: {
@@ -485,7 +566,11 @@ export const styles = StyleSheet.create({
     borderRadius: 999,
   },
   overlayLiveText: {
+<<<<<<< HEAD
     color: '#000',
+=======
+    color: theme.background,
+>>>>>>> aditya mule delay zala ahe sagla
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -531,7 +616,11 @@ export const styles = StyleSheet.create({
   },
   tripStatusText: {
     fontSize: 11,
+<<<<<<< HEAD
     color: '#fff',
+=======
+    color: theme.surfaceText,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   manualField: {
@@ -557,7 +646,11 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
   manualError: {
+<<<<<<< HEAD
     color: '#F44336',
+=======
+    color: theme.critical,
+>>>>>>> aditya mule delay zala ahe sagla
     fontSize: 12,
     fontWeight: '600',
   },
@@ -568,7 +661,11 @@ export const styles = StyleSheet.create({
   },
   manualInlineInput: {
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: '#2a2a2a',
+=======
+    borderColor: theme.divider,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -592,7 +689,11 @@ export const styles = StyleSheet.create({
     opacity: 0.6,
   },
   manualInlineButtonText: {
+<<<<<<< HEAD
     color: '#4CAF50',
+=======
+    color: theme.accent,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   manualInlineCancel: {
@@ -600,7 +701,15 @@ export const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   manualInlineCancelText: {
+<<<<<<< HEAD
     color: '#888',
     fontSize: 12,
   },
 });
+=======
+    color: theme.textSecondary,
+    fontSize: 12,
+  },
+  });
+}
+>>>>>>> aditya mule delay zala ahe sagla

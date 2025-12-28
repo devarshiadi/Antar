@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
+=======
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+>>>>>>> aditya mule delay zala ahe sagla
 
 import {
   View,
@@ -17,7 +21,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../services/api';
+<<<<<<< HEAD
 import { COLORS } from '../constants/theme';
+=======
+>>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
@@ -27,7 +34,7 @@ const CODE_LENGTH = 6;
 const INITIAL_TIMER = 30;
 
 // Reusable Blinking Cursor Component
-const BlinkingCursor = () => {
+const BlinkingCursor = ({ cursorStyle }) => {
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -49,11 +56,196 @@ const BlinkingCursor = () => {
     return () => animation.stop();
   }, [opacity]);
 
-  return <Animated.View style={[styles.cursor, { opacity }]} />;
+  return <Animated.View style={[cursorStyle, { opacity }]} />;
 };
+
+<<<<<<< HEAD
+const VerificationScreen = ({ navigation, route }) => {
+  const { colors, statusBarStyle } = useAppTheme();
+=======
+function getStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 24,
+      paddingTop: height * 0.08,
+      paddingBottom: height * 0.05,
+    },
+    header: {
+      marginBottom: height * 0.04,
+    },
+    headerTitle: {
+      fontSize: Math.min(width * 0.1, 40),
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: 8,
+    },
+    headerSubtitle: {
+      fontSize: Math.min(width * 0.065, 26),
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: 16,
+    },
+    instructionText: {
+      fontSize: Math.min(width * 0.04, 16),
+      color: colors.text.secondary,
+      lineHeight: 24,
+    },
+    phoneNumber: {
+      color: colors.accent.primary,
+      fontWeight: '600',
+    },
+    debugText: {
+      fontSize: 12,
+      color: colors.state.warning,
+      marginTop: 8,
+      fontStyle: 'italic',
+    },
+    hiddenInput: {
+      position: 'absolute',
+      width: 0,
+      height: 0,
+      opacity: 0,
+    },
+    otpContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: height * 0.02,
+      paddingHorizontal: 5,
+    },
+    otpBox: {
+      width: Math.min((width - 78) / CODE_LENGTH, 55),
+      height: 64,
+      backgroundColor: colors.bg.elevated,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.border.default,
+      marginHorizontal: 2,
+    },
+    otpBoxFilled: {
+      borderColor: colors.accent.primary,
+      backgroundColor: colors.accent.subtle,
+    },
+    otpBoxFocused: {
+      borderColor: colors.border.focus,
+      backgroundColor: colors.bg.elevated,
+      elevation: 3,
+      shadowColor: colors.accent.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+    otpBoxSuccess: {
+      borderColor: colors.state.success,
+      backgroundColor: colors.bg.elevated,
+    },
+    otpBoxError: {
+      borderColor: colors.state.error,
+      backgroundColor: colors.bg.elevated,
+    },
+    otpText: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text.primary,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.text.tertiary,
+    },
+    cursor: {
+      width: 2,
+      height: 28,
+      backgroundColor: colors.accent.primary,
+      borderRadius: 1,
+    },
+    statusContainer: {
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 20,
+    },
+    statusText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.text.primary,
+    },
+    statusSuccess: {
+      color: colors.state.success,
+      fontSize: 16,
+    },
+    statusError: {
+      color: colors.state.error,
+      fontSize: 14,
+    },
+    bottomSection: {
+      marginBottom: 20,
+    },
+    timerSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    progressBarContainer: {
+      flex: 1,
+      height: 4,
+      backgroundColor: colors.bg.elevated,
+      borderRadius: 2,
+      marginRight: 16,
+      overflow: 'hidden',
+    },
+    progressBar: {
+      height: '100%',
+      backgroundColor: colors.accent.primary,
+      borderRadius: 2,
+    },
+    timerText: {
+      color: colors.text.secondary,
+      fontSize: 14,
+      fontWeight: '600',
+      minWidth: 45,
+    },
+    resendContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    resendText: {
+      color: colors.text.secondary,
+      fontSize: 15,
+      marginRight: 8,
+    },
+    resendButtonContainer: {
+      padding: 4,
+    },
+    resendButton: {
+      color: colors.accent.primary,
+      fontSize: 15,
+      fontWeight: '700',
+      textDecorationLine: 'underline',
+    },
+    resendCountText: {
+      color: colors.text.tertiary,
+      fontSize: 12,
+      textAlign: 'center',
+      marginTop: 10,
+    },
+  });
+}
 
 const VerificationScreen = ({ navigation, route }) => {
   const { colors, statusBarStyle } = useAppTheme();
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
+>>>>>>> aditya mule delay zala ahe sagla
   const [code, setCode] = useState('');
 
   const [timer, setTimer] = useState(INITIAL_TIMER);
@@ -268,9 +460,9 @@ const VerificationScreen = ({ navigation, route }) => {
     }
   };
 
-  // Get box style based on state - FIXED: renamed local variable to avoid conflict
+  // Get box style based on state
   const getBoxStyle = (index) => {
-    const boxStyles = [styles.otpBox]; // Changed from 'styles' to 'boxStyles'
+    const boxStyles = [styles.otpBox];
     const isCurrent = index === code.length && isFocused;
     const isFilled = index < code.length;
 
@@ -295,7 +487,11 @@ const VerificationScreen = ({ navigation, route }) => {
   };
 
   return (
+<<<<<<< HEAD
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
+=======
+    <SafeAreaView style={styles.container}>
+>>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <Pressable 
         style={styles.content} 
@@ -358,7 +554,7 @@ const VerificationScreen = ({ navigation, route }) => {
                 {digit ? (
                   <Text style={styles.otpText}>{digit}</Text>
                 ) : showCursor ? (
-                  <BlinkingCursor />
+                  <BlinkingCursor cursorStyle={styles.cursor} />
                 ) : (
                   <View style={styles.dot} />
                 )}
@@ -421,6 +617,7 @@ const VerificationScreen = ({ navigation, route }) => {
   );
 };
 
+<<<<<<< HEAD
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
@@ -596,4 +793,6 @@ const styles = StyleSheet.create({
   },
 });
 
+=======
+>>>>>>> aditya mule delay zala ahe sagla
 export default VerificationScreen;

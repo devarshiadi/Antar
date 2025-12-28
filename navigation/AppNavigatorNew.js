@@ -3,7 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+<<<<<<< HEAD
 import { COLORS } from '../constants/theme';
+=======
+>>>>>>> aditya mule delay zala ahe sagla
 import { getAppTheme } from '../helpers/use-app-theme';
 
 // Auth Screens

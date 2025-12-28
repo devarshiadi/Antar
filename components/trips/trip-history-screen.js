@@ -2,7 +2,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ChevronRight } from 'lucide-react-native';
+<<<<<<< HEAD
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+=======
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
+>>>>>>> aditya mule delay zala ahe sagla
 import * as Contacts from 'expo-contacts';
 import { getStoredRides } from '../../helpers/rides-storage';
 import { normalizeTripFromApi, computeTripHistoryStats } from '../../helpers/trip-history-helpers';
@@ -43,6 +47,12 @@ export const tripHistorySeed = [
 
 export function TripHistoryScreen({ navigation }) {
   const { colors, statusBarStyle } = useAppTheme();
+<<<<<<< HEAD
+=======
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
+>>>>>>> aditya mule delay zala ahe sagla
   const [filter, setFilter] = useState('all');
   const [trips, setTrips] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -257,17 +267,29 @@ Share with: ${contact.name} (${phone})`;
           <Text style={styles.tripPartner}>with {trip.partner}</Text>
           <Text style={styles.tripFare}>₹{trip.fare}</Text>
         </View>
+<<<<<<< HEAD
         <ChevronRight size={18} color={COLORS.text.tertiary} style={styles.tripChevron} />
+=======
+        <ChevronRight size={18} color={colors.text.tertiary} style={styles.tripChevron} />
+>>>>>>> aditya mule delay zala ahe sagla
       </TouchableOpacity>
     );
   }
 
   return (
+<<<<<<< HEAD
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text.primary} />
+=======
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <ArrowLeft size={24} color={colors.text.primary} />
+>>>>>>> aditya mule delay zala ahe sagla
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trip History</Text>
         <View style={styles.headerSpacer} />
@@ -277,7 +299,16 @@ Share with: ${contact.name} (${phone})`;
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
+<<<<<<< HEAD
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.text.secondary} colors={[COLORS.text.primary]} />
+=======
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text.secondary}
+            colors={[colors.text.primary]}
+          />
+>>>>>>> aditya mule delay zala ahe sagla
         }
       >
         <View style={styles.filtersRow}>
@@ -334,7 +365,16 @@ Share with: ${contact.name} (${phone})`;
           </TouchableOpacity>
         </View>
       </ScrollView>
+<<<<<<< HEAD
       <TripDetailOverlay trip={selectedTrip} onClose={() => setSelectedTrip(null)} onShareRequest={handleTripShareRequest} />
+=======
+      <TripDetailOverlay
+        trip={selectedTrip}
+        onClose={() => setSelectedTrip(null)}
+        onShareRequest={handleTripShareRequest}
+        styles={styles}
+      />
+>>>>>>> aditya mule delay zala ahe sagla
       <ContactsPermissionOverlay visible={contactsPromptVisible} onAllow={handleAllowContacts} onDismiss={handleDismissContactsPrompt} />
       <ContactPickerSheet
         visible={contactPickerVisible}
@@ -349,7 +389,11 @@ Share with: ${contact.name} (${phone})`;
   );
 }
 
+<<<<<<< HEAD
 function TripDetailOverlay({ trip, onClose, onShareRequest }) {
+=======
+function TripDetailOverlay({ trip, onClose, onShareRequest, styles }) {
+>>>>>>> aditya mule delay zala ahe sagla
   if (!trip) {
     return null;
   }
@@ -389,10 +433,18 @@ function TripDetailOverlay({ trip, onClose, onShareRequest }) {
   );
 }
 
+<<<<<<< HEAD
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg.primary,
+=======
+function getStyles(colors) {
+  return StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.bg.primary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   header: {
     flexDirection: 'row',
@@ -401,11 +453,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
+<<<<<<< HEAD
     borderBottomColor: COLORS.border.subtle,
   },
   headerTitle: {
     ...TYPOGRAPHY.title,
     color: COLORS.text.primary,
+=======
+    borderBottomColor: colors.border.subtle,
+  },
+  headerTitle: {
+    ...TYPOGRAPHY.title,
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   headerSpacer: {
     width: 24,
@@ -425,6 +485,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: SPACING.md,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
     borderRadius: RADIUS.sm,
   },
@@ -438,12 +499,31 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: COLORS.text.primary,
+=======
+    borderColor: colors.border.default,
+    borderRadius: RADIUS.sm,
+  },
+  filterChipActive: {
+    borderColor: colors.text.primary,
+    backgroundColor: colors.bg.elevated,
+  },
+  filterText: {
+    ...TYPOGRAPHY.caption,
+    color: colors.text.secondary,
+  },
+  filterTextActive: {
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   statsCard: {
     padding: SPACING.md,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
+=======
+    borderColor: colors.border.default,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: RADIUS.md,
     marginBottom: SPACING.lg,
   },
@@ -457,29 +537,49 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...TYPOGRAPHY.title,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.xs,
   },
   statLabel: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.tertiary,
+=======
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   statDivider: {
     width: 1,
     height: '100%',
+<<<<<<< HEAD
     backgroundColor: COLORS.border.subtle,
+=======
+    backgroundColor: colors.border.subtle,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   statsDetail: {
     paddingTop: SPACING.md,
     borderTopWidth: 1,
+<<<<<<< HEAD
     borderTopColor: COLORS.border.subtle,
+=======
+    borderTopColor: colors.border.subtle,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripsSection: {
     marginTop: SPACING.sm,
   },
   sectionTitle: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.tertiary,
+=======
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: SPACING.sm,
@@ -497,20 +597,34 @@ const styles = StyleSheet.create({
   },
   dateTitle: {
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.primary,
   },
   dateMeta: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.tertiary,
+=======
+    color: colors.text.primary,
+  },
+  dateMeta: {
+    ...TYPOGRAPHY.caption,
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripCard: {
     position: 'relative',
     padding: SPACING.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.bg.card,
+=======
+    borderColor: colors.border.default,
+    borderRadius: RADIUS.sm,
+    backgroundColor: colors.bg.card,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripHeader: {
     flexDirection: 'row',
@@ -520,18 +634,30 @@ const styles = StyleSheet.create({
   },
   tripDate: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.secondary,
+=======
+    color: colors.text.secondary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripType: {
     ...TYPOGRAPHY.caption,
     fontSize: 11,
+<<<<<<< HEAD
     color: COLORS.text.tertiary,
+=======
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
     letterSpacing: 0.5,
   },
   tripRoute: {
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.xs,
   },
   tripFooter: {
@@ -541,12 +667,20 @@ const styles = StyleSheet.create({
   },
   tripPartner: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.secondary,
+=======
+    color: colors.text.secondary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripFare: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   tripChevron: {
     position: 'absolute',
@@ -564,23 +698,40 @@ const styles = StyleSheet.create({
     width: '85%',
     borderRadius: RADIUS.lg,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
     backgroundColor: COLORS.bg.elevated,
+=======
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.elevated,
+>>>>>>> aditya mule delay zala ahe sagla
     padding: SPACING.lg,
     gap: SPACING.sm,
   },
   detailTitle: {
     ...TYPOGRAPHY.title,
+<<<<<<< HEAD
     color: COLORS.text.primary,
   },
   detailRoute: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+  },
+  detailRoute: {
+    ...TYPOGRAPHY.body,
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   detailMeta: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.secondary,
+=======
+    color: colors.text.secondary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.sm,
   },
   detailRow: {
@@ -590,11 +741,19 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.tertiary,
   },
   detailValue: {
     ...TYPOGRAPHY.body,
     color: COLORS.text.primary,
+=======
+    color: colors.text.tertiary,
+  },
+  detailValue: {
+    ...TYPOGRAPHY.body,
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   detailActionRow: {
@@ -608,12 +767,20 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.text.primary,
+=======
+    borderColor: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     alignItems: 'center',
   },
   detailShareText: {
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     fontWeight: '600',
   },
   detailClose: {
@@ -621,12 +788,20 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
+=======
+    borderColor: colors.border.default,
+>>>>>>> aditya mule delay zala ahe sagla
     alignItems: 'center',
   },
   detailCloseText: {
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   pickerOverlay: {
     position: 'absolute',
@@ -636,14 +811,23 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: RADIUS.lg,
     borderTopRightRadius: RADIUS.lg,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
     backgroundColor: COLORS.bg.elevated,
+=======
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.elevated,
+>>>>>>> aditya mule delay zala ahe sagla
     maxHeight: '60%',
     padding: SPACING.md,
   },
   pickerTitle: {
     ...TYPOGRAPHY.title,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.sm,
   },
   pickerList: {
@@ -652,6 +836,7 @@ const styles = StyleSheet.create({
   contactRow: {
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
+<<<<<<< HEAD
     borderBottomColor: COLORS.border.subtle,
   },
   contactName: {
@@ -661,6 +846,17 @@ const styles = StyleSheet.create({
   contactPhone: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
+=======
+    borderBottomColor: colors.border.subtle,
+  },
+  contactName: {
+    ...TYPOGRAPHY.body,
+    color: colors.text.primary,
+  },
+  contactPhone: {
+    ...TYPOGRAPHY.caption,
+    color: colors.text.secondary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginTop: 2,
   },
   emptyState: {
@@ -669,25 +865,44 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...TYPOGRAPHY.title,
+<<<<<<< HEAD
     color: COLORS.text.primary,
+=======
+    color: colors.text.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.xs,
   },
   emptyText: {
     ...TYPOGRAPHY.caption,
+<<<<<<< HEAD
     color: COLORS.text.tertiary,
+=======
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   loadMore: {
     alignItems: 'center',
     paddingVertical: SPACING.md,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
+=======
+    borderColor: colors.border.default,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: RADIUS.sm,
     marginTop: SPACING.md,
   },
   loadMoreText: {
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.secondary,
   },
 });
+=======
+    color: colors.text.secondary,
+  },
+  });
+}
+>>>>>>> aditya mule delay zala ahe sagla
 
 export default TripHistoryScreen;

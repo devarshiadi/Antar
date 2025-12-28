@@ -20,13 +20,23 @@ import { saveGlobalRoute, loadGlobalRoute } from '../../helpers/location-storage
 import { getStoredRides } from '../../helpers/rides-storage';
 import { normalizeTripFromApi } from '../../helpers/trip-history-helpers';
 import { useAppTheme } from '../../helpers/use-app-theme';
+<<<<<<< HEAD
 import { styles } from './home-styles';
+=======
+import { getHomeStyles } from './home-styles';
+>>>>>>> aditya mule delay zala ahe sagla
 
 const LOCATION_PERMISSION_KEY = 'location_permission_preference';
 
 export function HomeScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   const { theme } = useAppTheme();
+<<<<<<< HEAD
+=======
+  const styles = useMemo(function () {
+    return getHomeStyles(theme);
+  }, [theme]);
+>>>>>>> aditya mule delay zala ahe sagla
   const currentUser = route.params?.user || null;
   const userName = currentUser?.name?.trim() || 'Traveler';
   const recentTrips = route.params?.recentTrips ?? [];
@@ -501,6 +511,10 @@ export function HomeScreen({ navigation, route }) {
       >
         <LocationSelector
           theme={theme}
+<<<<<<< HEAD
+=======
+          styles={styles}
+>>>>>>> aditya mule delay zala ahe sagla
           sourceLocation={sourceLocation}
           destinationLocation={destinationLocation}
           onSelectSource={handleSourceSelect}
@@ -511,11 +525,20 @@ export function HomeScreen({ navigation, route }) {
           onManualSubmit={handleManualSubmit}
           onManualCancel={closeManualMode}
         />
+<<<<<<< HEAD
         <QuickActionsSection theme={theme} onOfferRide={handleOfferRide} onFindRide={handleFindRide} />
         <RecentTripsSection theme={theme} trips={homeRecentTrips} onViewAll={handleViewAllTrips} />
       </ScrollView>
       <LocationPermissionOverlay
         theme={theme}
+=======
+        <QuickActionsSection theme={theme} styles={styles} onOfferRide={handleOfferRide} onFindRide={handleFindRide} />
+        <RecentTripsSection theme={theme} styles={styles} trips={homeRecentTrips} onViewAll={handleViewAllTrips} />
+      </ScrollView>
+      <LocationPermissionOverlay
+        theme={theme}
+        styles={styles}
+>>>>>>> aditya mule delay zala ahe sagla
         visible={showLocationPrompt}
         onAllow={handleAllowLocation}
         onAskEveryTime={handleAskEveryTimePermission}
@@ -523,6 +546,10 @@ export function HomeScreen({ navigation, route }) {
       />
       <MessagesOverlay
         theme={theme}
+<<<<<<< HEAD
+=======
+        styles={styles}
+>>>>>>> aditya mule delay zala ahe sagla
         visible={messagesExpanded}
         threads={visibleThreads}
         currentThread={currentThread}
@@ -536,6 +563,10 @@ export function HomeScreen({ navigation, route }) {
 
 function LocationSelector({
   theme,
+<<<<<<< HEAD
+=======
+  styles,
+>>>>>>> aditya mule delay zala ahe sagla
   sourceLocation,
   destinationLocation,
   onSelectSource,
@@ -655,7 +686,11 @@ function LocationSelector({
   );
 }
 
+<<<<<<< HEAD
 function MessagesOverlay({ theme, visible, threads, currentThread, formatTime, onClose, onOpenThread }) {
+=======
+function MessagesOverlay({ theme, styles, visible, threads, currentThread, formatTime, onClose, onOpenThread }) {
+>>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }
@@ -729,7 +764,11 @@ function MessagesOverlay({ theme, visible, threads, currentThread, formatTime, o
   );
 }
 
+<<<<<<< HEAD
 function QuickActionsSection({ theme, onOfferRide, onFindRide }) {
+=======
+function QuickActionsSection({ theme, styles, onOfferRide, onFindRide }) {
+>>>>>>> aditya mule delay zala ahe sagla
   return (
     <View style={styles.quickActions}>
       <TouchableOpacity
@@ -758,7 +797,11 @@ function QuickActionsSection({ theme, onOfferRide, onFindRide }) {
   );
 }
 
+<<<<<<< HEAD
 function DashboardInsights({ theme, cards, onSelect }) {
+=======
+function DashboardInsights({ theme, styles, cards, onSelect }) {
+>>>>>>> aditya mule delay zala ahe sagla
   if (!cards || cards.length === 0) {
     return null;
   }
@@ -789,7 +832,11 @@ function DashboardInsights({ theme, cards, onSelect }) {
   );
 }
 
+<<<<<<< HEAD
 function RecentTripsSection({ theme, trips, onViewAll }) {
+=======
+function RecentTripsSection({ theme, styles, trips, onViewAll }) {
+>>>>>>> aditya mule delay zala ahe sagla
   return (
     <View style={styles.recentSection}>
       <View style={styles.sectionHeader}>
@@ -826,7 +873,11 @@ function RecentTripsSection({ theme, trips, onViewAll }) {
   );
 }
 
+<<<<<<< HEAD
 function LocationPermissionOverlay({ theme, visible, onAllow, onAskEveryTime, onDismiss }) {
+=======
+function LocationPermissionOverlay({ theme, styles, visible, onAllow, onAskEveryTime, onDismiss }) {
+>>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }
@@ -863,7 +914,11 @@ function LocationPermissionOverlay({ theme, visible, onAllow, onAskEveryTime, on
   );
 }
 
+<<<<<<< HEAD
 function ManualLocationOverlay({ theme, visible, value, error, loading, type, onChangeText, onSubmit, onDismiss }) {
+=======
+function ManualLocationOverlay({ theme, styles, visible, value, error, loading, type, onChangeText, onSubmit, onDismiss }) {
+>>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }

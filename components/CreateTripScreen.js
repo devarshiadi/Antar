@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,13 +21,22 @@ import {
   DollarSign,
   Search,
 } from 'lucide-react-native';
+<<<<<<< HEAD
 import { COLORS } from '../constants/theme';
+=======
+>>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
 
 const { width, height } = Dimensions.get('window');
 
 const CreateTripScreen = ({ navigation, route }) => {
   const { colors, statusBarStyle } = useAppTheme();
+<<<<<<< HEAD
+=======
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
+>>>>>>> aditya mule delay zala ahe sagla
   const { tripType = 'offer' } = route.params || {};
   const [sourceLocation, setSourceLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
@@ -79,7 +88,11 @@ const CreateTripScreen = ({ navigation, route }) => {
   };
 
   return (
+<<<<<<< HEAD
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+=======
+    <SafeAreaView style={styles.container} edges={['top']}>
+>>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       
       {/* Header */}
@@ -88,7 +101,7 @@ const CreateTripScreen = ({ navigation, route }) => {
           style={styles.backButton}
           onPress={() => navigation?.goBack()}
         >
-          <ArrowLeft size={24} color="#fff" />
+          <ArrowLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Create Trip</Text>
         <View style={{ width: 24 }} />
@@ -139,7 +152,7 @@ const CreateTripScreen = ({ navigation, route }) => {
           )}
           
           <View style={styles.mapPickerFooter}>
-            <Search size={16} color="#888" />
+            <Search size={16} color={colors.text.secondary} />
             <Text style={styles.mapPickerFooterText}>Open Map</Text>
           </View>
         </TouchableOpacity>
@@ -149,7 +162,7 @@ const CreateTripScreen = ({ navigation, route }) => {
           <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
             <Text style={styles.inputLabel}>Date</Text>
             <View style={styles.inputContainer}>
-              <Calendar size={20} color="#888" />
+              <Calendar size={20} color={colors.text.secondary} />
               <Text style={styles.autoFilledText}>{departureDate}</Text>
             </View>
           </View>
@@ -157,7 +170,7 @@ const CreateTripScreen = ({ navigation, route }) => {
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <Text style={styles.inputLabel}>Time</Text>
             <View style={styles.inputContainer}>
-              <Clock size={20} color="#888" />
+              <Clock size={20} color={colors.text.secondary} />
               <Text style={styles.autoFilledText}>{departureTime}</Text>
             </View>
           </View>
@@ -169,11 +182,11 @@ const CreateTripScreen = ({ navigation, route }) => {
             <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
               <Text style={styles.inputLabel}>Available Seats</Text>
               <View style={styles.inputContainer}>
-                <Users size={20} color="#888" />
+                <Users size={20} color={colors.text.secondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="1"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.text.tertiary}
                   keyboardType="numeric"
                   value={seats}
                   onChangeText={setSeats}
@@ -184,11 +197,11 @@ const CreateTripScreen = ({ navigation, route }) => {
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.inputLabel}>Price per Seat</Text>
               <View style={styles.inputContainer}>
-                <DollarSign size={20} color="#888" />
+                <DollarSign size={20} color={colors.text.secondary} />
                 <TextInput
                   style={styles.input}
                   placeholder="₹ 100"
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.text.tertiary}
                   keyboardType="numeric"
                   value={price}
                   onChangeText={setPrice}
@@ -203,11 +216,11 @@ const CreateTripScreen = ({ navigation, route }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Max Price Willing to Pay</Text>
             <View style={styles.inputContainer}>
-              <DollarSign size={20} color="#888" />
+              <DollarSign size={20} color={colors.text.secondary} />
               <TextInput
                 style={styles.input}
                 placeholder="₹ 100"
-                placeholderTextColor="#666"
+                placeholderTextColor={colors.text.tertiary}
                 keyboardType="numeric"
                 value={price}
                 onChangeText={setPrice}
@@ -245,6 +258,7 @@ const CreateTripScreen = ({ navigation, route }) => {
   );
 };
 
+<<<<<<< HEAD
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -443,5 +457,171 @@ const styles = StyleSheet.create({
     color: COLORS.button.primaryText,
   },
 });
+=======
+function getStyles(colors) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+    },
+    backButton: {
+      padding: 5,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    tripTypeIndicator: {
+      backgroundColor: colors.bg.card,
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 10,
+      marginBottom: 20,
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: colors.accent.primary,
+    },
+    tripTypeIndicatorText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text.primary,
+    },
+    inputGroup: {
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 8,
+      fontWeight: '500',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.bg.card,
+      borderRadius: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      gap: 10,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+    },
+    mapPickerCard: {
+      backgroundColor: colors.bg.card,
+      borderRadius: 12,
+      padding: 18,
+      marginBottom: 20,
+      borderWidth: 2,
+      borderColor: colors.border.strong,
+    },
+    mapPickerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    mapPickerTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginLeft: 12,
+    },
+    mapPickerSubtitle: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 12,
+    },
+    selectedLocations: {
+      marginBottom: 12,
+    },
+    selectedLocationRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    locationDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginRight: 10,
+    },
+    selectedLocationText: {
+      fontSize: 14,
+      color: colors.text.primary,
+      flex: 1,
+    },
+    mapPickerFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.default,
+    },
+    mapPickerFooterText: {
+      fontSize: 14,
+      color: colors.accent.primary,
+      marginLeft: 8,
+      fontWeight: '600',
+    },
+    autoFilledText: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.accent.primary,
+      fontWeight: '500',
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text.primary,
+    },
+    row: {
+      flexDirection: 'row',
+    },
+    infoCard: {
+      backgroundColor: colors.bg.card,
+      padding: 20,
+      borderRadius: 12,
+      marginTop: 10,
+      marginBottom: 25,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.accent.primary,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+      marginBottom: 8,
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      lineHeight: 20,
+    },
+    createButton: {
+      backgroundColor: colors.button.primaryBg,
+      paddingVertical: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    createButtonText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.button.primaryText,
+    },
+  });
+}
+>>>>>>> aditya mule delay zala ahe sagla
 
 export default CreateTripScreen;

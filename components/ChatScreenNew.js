@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from 'react';
+=======
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+>>>>>>> aditya mule delay zala ahe sagla
 import {
   View,
   Text,
@@ -13,7 +17,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Send, Phone, Info } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+<<<<<<< HEAD
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+=======
+import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
+>>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
 
 const CHAT_STORAGE_PREFIX = 'chat_history_';
@@ -27,6 +35,12 @@ const seededMessages = [
 function ChatScreenNew({ navigation, route }) {
   const { matchId, contact } = route.params || {};
   const { colors, statusBarStyle } = useAppTheme();
+<<<<<<< HEAD
+=======
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
+>>>>>>> aditya mule delay zala ahe sagla
   const [messages, setMessages] = useState(seededMessages);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef(null);
@@ -146,13 +160,21 @@ function ChatScreenNew({ navigation, route }) {
   };
 
   return (
+<<<<<<< HEAD
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
+=======
+    <SafeAreaView style={styles.container} edges={['top']}>
+>>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
+<<<<<<< HEAD
           <ArrowLeft size={24} color={COLORS.text.primary} />
+=======
+          <ArrowLeft size={24} color={colors.text.primary} />
+>>>>>>> aditya mule delay zala ahe sagla
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerName}>{otherUser.name}</Text>
@@ -166,10 +188,17 @@ function ChatScreenNew({ navigation, route }) {
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
+<<<<<<< HEAD
             <Phone size={20} color={COLORS.text.primary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton}>
             <Info size={20} color={COLORS.text.primary} />
+=======
+            <Phone size={20} color={colors.text.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Info size={20} color={colors.text.primary} />
+>>>>>>> aditya mule delay zala ahe sagla
           </TouchableOpacity>
         </View>
       </View>
@@ -198,7 +227,11 @@ function ChatScreenNew({ navigation, route }) {
             value={inputText}
             onChangeText={setInputText}
             placeholder="Type a message..."
+<<<<<<< HEAD
             placeholderTextColor={COLORS.text.tertiary}
+=======
+            placeholderTextColor={colors.text.tertiary}
+>>>>>>> aditya mule delay zala ahe sagla
             multiline
             maxLength={500}
           />
@@ -207,7 +240,14 @@ function ChatScreenNew({ navigation, route }) {
             onPress={handleSend}
             disabled={!inputText.trim()}
           >
+<<<<<<< HEAD
             <Send size={20} color={inputText.trim() ? COLORS.bg.primary : COLORS.text.tertiary} />
+=======
+            <Send
+              size={20}
+              color={inputText.trim() ? colors.button.primaryText : colors.text.tertiary}
+            />
+>>>>>>> aditya mule delay zala ahe sagla
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -215,10 +255,18 @@ function ChatScreenNew({ navigation, route }) {
   );
 }
 
+<<<<<<< HEAD
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg.primary,
+=======
+function getStyles(colors) {
+  return StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.bg.primary,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   header: {
     flexDirection: 'row',
@@ -226,7 +274,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
+<<<<<<< HEAD
     borderBottomColor: COLORS.border.subtle,
+=======
+    borderBottomColor: colors.border.subtle,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   headerCenter: {
     flex: 1,
@@ -235,11 +287,24 @@ const styles = StyleSheet.create({
   headerName: {
     ...TYPOGRAPHY.body,
     fontWeight: '600',
+<<<<<<< HEAD
     color: COLORS.text.primary,
   },
   headerRating: {
     ...TYPOGRAPHY.caption,
     color: COLORS.text.secondary,
+=======
+    color: colors.text.primary,
+  },
+  headerRating: {
+    ...TYPOGRAPHY.caption,
+    color: colors.text.secondary,
+    marginTop: SPACING.xs,
+  },
+  headerMeta: {
+    ...TYPOGRAPHY.caption,
+    color: colors.text.tertiary,
+>>>>>>> aditya mule delay zala ahe sagla
     marginTop: SPACING.xs,
   },
   headerActions: {
@@ -268,6 +333,7 @@ const styles = StyleSheet.create({
   messageBubble: {
     padding: SPACING.sm + 2,
     borderWidth: 1,
+<<<<<<< HEAD
     borderColor: COLORS.border.default,
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.bg.elevated,
@@ -282,6 +348,22 @@ const styles = StyleSheet.create({
   },
   sentText: {
     color: COLORS.bg.primary,
+=======
+    borderColor: colors.border.default,
+    borderRadius: RADIUS.md,
+    backgroundColor: colors.bg.elevated,
+  },
+  sentBubble: {
+    backgroundColor: colors.button.primaryBg,
+    borderColor: colors.button.primaryBg,
+  },
+  messageText: {
+    ...TYPOGRAPHY.body,
+    color: colors.text.primary,
+  },
+  sentText: {
+    color: colors.button.primaryText,
+>>>>>>> aditya mule delay zala ahe sagla
   },
   inputContainer: {
     flexDirection: 'row',
@@ -289,17 +371,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderTopWidth: 1,
+<<<<<<< HEAD
     borderTopColor: COLORS.border.subtle,
     backgroundColor: COLORS.bg.primary,
+=======
+    borderTopColor: colors.border.subtle,
+    backgroundColor: colors.bg.primary,
+>>>>>>> aditya mule delay zala ahe sagla
     gap: SPACING.sm,
   },
   input: {
     flex: 1,
     ...TYPOGRAPHY.body,
+<<<<<<< HEAD
     color: COLORS.text.primary,
     backgroundColor: COLORS.bg.elevated,
     borderWidth: 1,
     borderColor: COLORS.border.default,
+=======
+    color: colors.text.primary,
+    backgroundColor: colors.bg.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+>>>>>>> aditya mule delay zala ahe sagla
     borderRadius: RADIUS.sm,
     paddingHorizontal: SPACING.sm + 2,
     paddingVertical: SPACING.sm,
@@ -309,16 +403,30 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: RADIUS.sm,
+<<<<<<< HEAD
     backgroundColor: COLORS.bg.elevated,
     borderWidth: 1,
     borderColor: COLORS.border.default,
+=======
+    backgroundColor: colors.bg.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+>>>>>>> aditya mule delay zala ahe sagla
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonActive: {
+<<<<<<< HEAD
     backgroundColor: COLORS.text.primary,
     borderColor: COLORS.text.primary,
   },
 });
+=======
+    backgroundColor: colors.button.primaryBg,
+    borderColor: colors.button.primaryBg,
+  },
+  });
+}
+>>>>>>> aditya mule delay zala ahe sagla
 
 export default ChatScreenNew;

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useEffect, useRef } from 'react';
+=======
+import React, { useEffect, useMemo, useRef } from 'react';
+>>>>>>> aditya mule delay zala ahe sagla
 import {
   View,
   StyleSheet,
@@ -9,11 +13,23 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
 } from 'react-native';
+<<<<<<< HEAD
 import { COLORS, RADIUS, SPACING, ELEVATION, ANIMATION } from '../../constants/theme';
+=======
+import { RADIUS, SPACING, ELEVATION, ANIMATION } from '../../constants/theme';
+import { useAppTheme } from '../../helpers/use-app-theme';
+>>>>>>> aditya mule delay zala ahe sagla
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 function BottomSheet({ visible, onClose, children, height = '70%', showHandle = true }) {
+<<<<<<< HEAD
+=======
+  const { colors } = useAppTheme();
+  const styles = useMemo(function () {
+    return getStyles(colors);
+  }, [colors]);
+>>>>>>> aditya mule delay zala ahe sagla
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -116,6 +132,7 @@ function BottomSheet({ visible, onClose, children, height = '70%', showHandle = 
   );
 }
 
+<<<<<<< HEAD
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -150,5 +167,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
 });
+=======
+function getStyles(colors) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    },
+    sheet: {
+      backgroundColor: colors.bg.elevated,
+      borderTopLeftRadius: RADIUS.xl,
+      borderTopRightRadius: RADIUS.xl,
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border.default,
+      ...ELEVATION.medium,
+    },
+    handleContainer: {
+      alignItems: 'center',
+      paddingVertical: SPACING.md,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      backgroundColor: colors.border.strong,
+      borderRadius: RADIUS.sm,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: SPACING.md,
+    },
+  });
+}
+>>>>>>> aditya mule delay zala ahe sagla
 
 export default BottomSheet;
