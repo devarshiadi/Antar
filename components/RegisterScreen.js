@@ -1,23 +1,15 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, SafeAreaView, Switch, StatusBar } from 'react-native';
-import { COLORS } from '../constants/theme';
-=======
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, SafeAreaView, Switch, StatusBar } from 'react-native';
->>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
+import { authService } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 
 const RegisterScreen = ({ navigation }) => {
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const [fullName, setFullName] = useState('');
   const [phoneNumber1, setPhoneNumber1] = useState('');
   const [phoneNumber2, setPhoneNumber2] = useState('');
@@ -26,35 +18,41 @@ const RegisterScreen = ({ navigation }) => {
   const [isDriver, setIsDriver] = useState(false);
   const [licenseType, setLicenseType] = useState('');
 
-  const handleRegister = () => {
-    console.log('Registering with:', { fullName, phoneNumber1, phoneNumber2, password, confirmPassword, isDriver, licenseType });
-    // Navigate to Verification screen
-    navigation.navigate('Verification', { phoneNumber: phoneNumber1.trim() });
+  async function handleRegister() {
+    const trimmedPhone = phoneNumber1.trim();
+    if (!trimmedPhone) {
+      return;
+    }
+    try {
+      await authService.register({
+        full_name: fullName.trim(),
+        phone_number: trimmedPhone,
+        password,
+        confirm_password: confirmPassword,
+        is_driver: isDriver,
+        license_type: licenseType.trim(),
+        alternate_phone_number: phoneNumber2.trim(),
+      });
+    } catch (error) {}
+    navigation.navigate('Verification', { phoneNumber: trimmedPhone });
   };
 
   const toggleDriverSwitch = () => setIsDriver(previousState => !previousState);
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
-      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
-      <Text style={[styles.headerTitle, { color: colors.text.primary }]}>RegisterScreen</Text>
-      <Text style={[styles.greetingText, { color: colors.text.secondary }]}>Join Antar! Please create a account.</Text>
-=======
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <Text style={styles.headerTitle}>RegisterScreen</Text>
       <Text style={styles.greetingText}>Join Antar! Please create a account.</Text>
->>>>>>> aditya mule delay zala ahe sagla
 
       <TouchableOpacity style={styles.avatarPlaceholder}>
-        <Text style={[styles.avatarText, { color: colors.text.primary }]}>Tap to upload avatar</Text>
+        <Text style={styles.avatarText}>Tap to upload avatar</Text>
       </TouchableOpacity>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Full Name</Text>
+        <Text style={styles.inputLabel}>Full Name</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+          style={styles.input}
           placeholder="Full Name"
           placeholderTextColor={colors.text.tertiary}
           value={fullName}
@@ -63,9 +61,9 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Phone Number</Text>
+        <Text style={styles.inputLabel}>Phone Number</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+          style={styles.input}
           placeholder="Phone Number"
           placeholderTextColor={colors.text.tertiary}
           keyboardType="phone-pad"
@@ -75,9 +73,9 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Phone Number</Text>
+        <Text style={styles.inputLabel}>Phone Number</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+          style={styles.input}
           placeholder="Phone Number"
           placeholderTextColor={colors.text.tertiary}
           keyboardType="phone-pad"
@@ -87,9 +85,9 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Password</Text>
+        <Text style={styles.inputLabel}>Password</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+          style={styles.input}
           placeholder="Password"
           placeholderTextColor={colors.text.tertiary}
           secureTextEntry
@@ -99,9 +97,9 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Confirm Password</Text>
+        <Text style={styles.inputLabel}>Confirm Password</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+          style={styles.input}
           placeholder="Confirm Password"
           placeholderTextColor={colors.text.tertiary}
           secureTextEntry
@@ -111,7 +109,7 @@ const RegisterScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.driverSwitchContainer}>
-        <Text style={[styles.driverSwitchText, { color: colors.text.primary }]}>Are you registering as a driver?</Text>
+        <Text style={styles.driverSwitchText}>Are you registering as a driver?</Text>
         <Switch
           trackColor={{ false: "#767577", true: "#81b0ff" }}
           thumbColor={isDriver ? "#f5dd4b" : "#f4f3f4"}
@@ -124,9 +122,9 @@ const RegisterScreen = ({ navigation }) => {
       {isDriver && (
         <View style={styles.driverFieldsContainer}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>License Type</Text>
+            <Text style={styles.inputLabel}>License Type</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.bg.elevated, borderColor: colors.border.default, borderWidth: 1, color: colors.text.primary }]}
+              style={styles.input}
               placeholder="License Type"
               placeholderTextColor={colors.text.tertiary}
               value={licenseType}
@@ -134,7 +132,7 @@ const RegisterScreen = ({ navigation }) => {
             />
           </View>
           <TouchableOpacity style={styles.uploadVehicleButton}>
-            <Text style={[styles.uploadVehicleText, { color: colors.text.primary }]}>Upload Vehicle Photo</Text>
+            <Text style={styles.uploadVehicleText}>Upload Vehicle Photo</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -146,98 +144,6 @@ const RegisterScreen = ({ navigation }) => {
   );
 };
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  headerTitle: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  greetingText: {
-    fontSize: 16,
-    color: '#ccc',
-    marginBottom: 30,
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#333',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 30,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  inputGroup: {
-    width: '100%',
-    marginBottom: 15,
-  },
-  inputLabel: {
-    color: '#ccc',
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  input: {
-    backgroundColor: '#333',
-    color: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    fontSize: 16,
-    width: '100%',
-  },
-  driverSwitchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 20,
-  },
-  driverSwitchText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  driverFieldsContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  uploadVehicleButton: {
-    backgroundColor: '#333',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  uploadVehicleText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  createAccountButton: {
-    backgroundColor: COLORS.button.primaryBg,
-    paddingVertical: 15,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  createAccountButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.button.primaryText,
-  },
-});
-=======
 function getStyles(colors) {
   return StyleSheet.create({
     container: {
@@ -336,6 +242,5 @@ function getStyles(colors) {
     },
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default RegisterScreen;

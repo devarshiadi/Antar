@@ -18,26 +18,22 @@ import { MapPin, Car, User, Bell, Navigation, MessageSquare, ChevronRight } from
 import { useFocusEffect } from '@react-navigation/native';
 import { saveGlobalRoute, loadGlobalRoute } from '../../helpers/location-storage';
 import { getStoredRides } from '../../helpers/rides-storage';
+import { getNotificationsForUser } from '../../helpers/notifications-storage';
 import { normalizeTripFromApi } from '../../helpers/trip-history-helpers';
 import { useAppTheme } from '../../helpers/use-app-theme';
-<<<<<<< HEAD
-import { styles } from './home-styles';
-=======
+import { useSession } from '../../helpers/session-context';
 import { getHomeStyles } from './home-styles';
->>>>>>> aditya mule delay zala ahe sagla
 
 const LOCATION_PERMISSION_KEY = 'location_permission_preference';
 
 export function HomeScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   const { theme } = useAppTheme();
-<<<<<<< HEAD
-=======
+  const { user: sessionUser } = useSession();
   const styles = useMemo(function () {
     return getHomeStyles(theme);
   }, [theme]);
->>>>>>> aditya mule delay zala ahe sagla
-  const currentUser = route.params?.user || null;
+  const currentUser = route.params?.user || sessionUser || null;
   const userName = currentUser?.name?.trim() || 'Traveler';
   const recentTrips = route.params?.recentTrips ?? [];
   const [permissionPreference, setPermissionPreference] = useState(null);
@@ -53,6 +49,7 @@ export function HomeScreen({ navigation, route }) {
   const [chatThreads, setChatThreads] = useState([]);
   const [messagesExpanded, setMessagesExpanded] = useState(false);
   const [recentHistory, setRecentHistory] = useState([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const homeRecentTrips = useMemo(() => {
     const source = recentHistory.length > 0 ? recentHistory : recentTrips;
     if (!source || source.length === 0) {
@@ -212,6 +209,29 @@ export function HomeScreen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
+      async function hydrateNotificationCount() {
+        try {
+          const items = await getNotificationsForUser(currentUser?.id);
+          const unread = Array.isArray(items) ? items.filter((item) => !item.read).length : 0;
+          if (mounted) {
+            setUnreadNotificationsCount(unread);
+          }
+        } catch (error) {
+          if (mounted) {
+            setUnreadNotificationsCount(0);
+          }
+        }
+      }
+      hydrateNotificationCount();
+      return () => {
+        mounted = false;
+      };
+    }, [currentUser?.id]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
       async function hydrateRecentTrips() {
         try {
           const stored = await getStoredRides();
@@ -358,11 +378,27 @@ export function HomeScreen({ navigation, route }) {
     });
   }
 
+  function handleCreateTrip() {
+    navigation.navigate('CreateTrip', {
+      tripType: 'offer',
+      currentUser,
+    });
+  }
+
+  function handleActiveTrip() {
+    navigation.navigate('ActiveTrip', {
+      eta: 12,
+      currentUser,
+    });
+  }
+
   function handleSourceSelect() {
     navigation.navigate('LocationPicker', {
       tripType: 'find',
       locationType: 'source',
       returnScreen: 'Home',
+      pickupLocation: sourceLocation,
+      destinationLocation: destinationLocation,
     });
   }
 
@@ -371,6 +407,8 @@ export function HomeScreen({ navigation, route }) {
       tripType: 'find',
       locationType: 'destination',
       returnScreen: 'Home',
+      pickupLocation: sourceLocation,
+      destinationLocation: destinationLocation,
     });
   }
 
@@ -480,9 +518,11 @@ export function HomeScreen({ navigation, route }) {
             accessibilityLabel="View notifications"
           >
             <Bell size={24} color={theme.textPrimary} />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{String(unreadNotificationsCount)}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconButton, styles.chatIconButton, messagesExpanded && styles.chatIconActive]}
@@ -511,10 +551,7 @@ export function HomeScreen({ navigation, route }) {
       >
         <LocationSelector
           theme={theme}
-<<<<<<< HEAD
-=======
           styles={styles}
->>>>>>> aditya mule delay zala ahe sagla
           sourceLocation={sourceLocation}
           destinationLocation={destinationLocation}
           onSelectSource={handleSourceSelect}
@@ -525,20 +562,17 @@ export function HomeScreen({ navigation, route }) {
           onManualSubmit={handleManualSubmit}
           onManualCancel={closeManualMode}
         />
-<<<<<<< HEAD
-        <QuickActionsSection theme={theme} onOfferRide={handleOfferRide} onFindRide={handleFindRide} />
-        <RecentTripsSection theme={theme} trips={homeRecentTrips} onViewAll={handleViewAllTrips} />
-      </ScrollView>
-      <LocationPermissionOverlay
-        theme={theme}
-=======
-        <QuickActionsSection theme={theme} styles={styles} onOfferRide={handleOfferRide} onFindRide={handleFindRide} />
+        <QuickActionsSection
+          theme={theme}
+          styles={styles}
+          onOfferRide={handleOfferRide}
+          onFindRide={handleFindRide}
+          onCreateTrip={handleCreateTrip}
+          onActiveTrip={handleActiveTrip}
+        />
         <RecentTripsSection theme={theme} styles={styles} trips={homeRecentTrips} onViewAll={handleViewAllTrips} />
       </ScrollView>
-      <LocationPermissionOverlay
-        theme={theme}
-        styles={styles}
->>>>>>> aditya mule delay zala ahe sagla
+      <LocationPermissionOverlay theme={theme} styles={styles}
         visible={showLocationPrompt}
         onAllow={handleAllowLocation}
         onAskEveryTime={handleAskEveryTimePermission}
@@ -546,10 +580,7 @@ export function HomeScreen({ navigation, route }) {
       />
       <MessagesOverlay
         theme={theme}
-<<<<<<< HEAD
-=======
         styles={styles}
->>>>>>> aditya mule delay zala ahe sagla
         visible={messagesExpanded}
         threads={visibleThreads}
         currentThread={currentThread}
@@ -563,10 +594,7 @@ export function HomeScreen({ navigation, route }) {
 
 function LocationSelector({
   theme,
-<<<<<<< HEAD
-=======
   styles,
->>>>>>> aditya mule delay zala ahe sagla
   sourceLocation,
   destinationLocation,
   onSelectSource,
@@ -686,11 +714,7 @@ function LocationSelector({
   );
 }
 
-<<<<<<< HEAD
-function MessagesOverlay({ theme, visible, threads, currentThread, formatTime, onClose, onOpenThread }) {
-=======
 function MessagesOverlay({ theme, styles, visible, threads, currentThread, formatTime, onClose, onOpenThread }) {
->>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }
@@ -764,44 +788,62 @@ function MessagesOverlay({ theme, styles, visible, threads, currentThread, forma
   );
 }
 
-<<<<<<< HEAD
-function QuickActionsSection({ theme, onOfferRide, onFindRide }) {
-=======
-function QuickActionsSection({ theme, styles, onOfferRide, onFindRide }) {
->>>>>>> aditya mule delay zala ahe sagla
+function QuickActionsSection({ theme, styles, onOfferRide, onFindRide, onCreateTrip, onActiveTrip }) {
   return (
     <View style={styles.quickActions}>
-      <TouchableOpacity
-        style={[
-          styles.actionCard,
-          styles.primaryAction,
-          { backgroundColor: theme.surface, borderColor: theme.divider, borderWidth: 1 },
-        ]}
-        onPress={onOfferRide}
-        activeOpacity={0.85}
-      >
-        <Car size={32} color={theme.surfaceText} />
-        <Text style={[styles.actionTitle, { color: theme.surfaceText }]}>Offer a Ride</Text>
-        <Text style={[styles.actionSubtitle, { color: theme.textSecondary }]}>Share your route</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.actionCard, styles.secondaryAction, { backgroundColor: theme.card }]}
-        onPress={onFindRide}
-        activeOpacity={0.85}
-      >
-        <MapPin size={32} color={theme.textPrimary} />
-        <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>Find a Ride</Text>
-        <Text style={[styles.actionSubtitle, { color: theme.textSecondary }]}>Join nearby trips</Text>
-      </TouchableOpacity>
+      <View style={styles.quickActionCardsRow}>
+        <TouchableOpacity
+          style={[
+            styles.actionCard,
+            styles.primaryAction,
+            { backgroundColor: theme.surface, borderColor: theme.divider, borderWidth: 1 },
+          ]}
+          onPress={onOfferRide}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Offer a ride"
+        >
+          <Car size={32} color={theme.surfaceText} />
+          <Text style={[styles.actionTitle, { color: theme.surfaceText }]}>Offer a Ride</Text>
+          <Text style={[styles.actionSubtitle, { color: theme.textSecondary }]}>Share your route</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionCard, styles.secondaryAction, { backgroundColor: theme.card }]}
+          onPress={onFindRide}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Find a ride"
+        >
+          <MapPin size={32} color={theme.textPrimary} />
+          <Text style={[styles.actionTitle, { color: theme.textPrimary }]}>Find a Ride</Text>
+          <Text style={[styles.actionSubtitle, { color: theme.textSecondary }]}>Join nearby trips</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.quickActionSecondaryRow}>
+        <TouchableOpacity
+          style={[styles.quickActionSecondaryButton, { backgroundColor: theme.card, borderColor: theme.divider }]}
+          onPress={onCreateTrip}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Create a trip"
+        >
+          <Text style={[styles.quickActionSecondaryText, { color: theme.textPrimary }]}>Create Trip</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.quickActionSecondaryButton, { backgroundColor: theme.card, borderColor: theme.divider }]}
+          onPress={onActiveTrip}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Open active trip"
+        >
+          <Text style={[styles.quickActionSecondaryText, { color: theme.textPrimary }]}>Active Trip</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-<<<<<<< HEAD
-function DashboardInsights({ theme, cards, onSelect }) {
-=======
 function DashboardInsights({ theme, styles, cards, onSelect }) {
->>>>>>> aditya mule delay zala ahe sagla
   if (!cards || cards.length === 0) {
     return null;
   }
@@ -832,11 +874,7 @@ function DashboardInsights({ theme, styles, cards, onSelect }) {
   );
 }
 
-<<<<<<< HEAD
-function RecentTripsSection({ theme, trips, onViewAll }) {
-=======
 function RecentTripsSection({ theme, styles, trips, onViewAll }) {
->>>>>>> aditya mule delay zala ahe sagla
   return (
     <View style={styles.recentSection}>
       <View style={styles.sectionHeader}>
@@ -873,11 +911,7 @@ function RecentTripsSection({ theme, styles, trips, onViewAll }) {
   );
 }
 
-<<<<<<< HEAD
-function LocationPermissionOverlay({ theme, visible, onAllow, onAskEveryTime, onDismiss }) {
-=======
 function LocationPermissionOverlay({ theme, styles, visible, onAllow, onAskEveryTime, onDismiss }) {
->>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }
@@ -914,11 +948,7 @@ function LocationPermissionOverlay({ theme, styles, visible, onAllow, onAskEvery
   );
 }
 
-<<<<<<< HEAD
-function ManualLocationOverlay({ theme, visible, value, error, loading, type, onChangeText, onSubmit, onDismiss }) {
-=======
 function ManualLocationOverlay({ theme, styles, visible, value, error, loading, type, onChangeText, onSubmit, onDismiss }) {
->>>>>>> aditya mule delay zala ahe sagla
   if (!visible) {
     return null;
   }

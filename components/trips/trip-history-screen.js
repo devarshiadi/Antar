@@ -2,15 +2,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, RefreshControl, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ChevronRight } from 'lucide-react-native';
-<<<<<<< HEAD
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
-=======
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
->>>>>>> aditya mule delay zala ahe sagla
 import * as Contacts from 'expo-contacts';
 import { getStoredRides } from '../../helpers/rides-storage';
 import { normalizeTripFromApi, computeTripHistoryStats } from '../../helpers/trip-history-helpers';
 import { useAppTheme } from '../../helpers/use-app-theme';
+import { tripService } from '../../services/api';
 
 export const tripHistorySeed = [
   {
@@ -47,12 +44,9 @@ export const tripHistorySeed = [
 
 export function TripHistoryScreen({ navigation }) {
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const [filter, setFilter] = useState('all');
   const [trips, setTrips] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,6 +56,26 @@ export function TripHistoryScreen({ navigation }) {
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
   const [contactsData, setContactsData] = useState([]);
   const [pendingShareTrip, setPendingShareTrip] = useState(null);
+
+  function mapBackendTripToHistory(trip, index) {
+    if (!trip || typeof trip !== 'object') {
+      return normalizeTripFromApi(null, index);
+    }
+    const role = String(trip.trip_type || '').toLowerCase() === 'offer' ? 'rider' : 'passenger';
+    return normalizeTripFromApi(
+      {
+        id: trip.id,
+        from: trip.origin_address,
+        to: trip.destination_address,
+        time: trip.departure_time,
+        date: trip.departure_date,
+        fare: trip.price,
+        type: role,
+        partner: trip.user?.full_name || 'Ride partner',
+      },
+      index,
+    );
+  }
 
   function onRefresh() {
     hydrateTrips(true);
@@ -123,9 +137,16 @@ function ContactPickerSheet({ visible, contacts, onClose, onSelect }) {
       setRefreshing(true);
     }
     try {
-      const stored = await getStoredRides();
-      const base = Array.isArray(stored) ? stored : [];
-      const mapped = base.map((item, index) => normalizeTripFromApi(item, index));
+      let mapped = [];
+      try {
+        const apiTrips = await tripService.getMyTrips();
+        const list = Array.isArray(apiTrips) ? apiTrips : [];
+        mapped = list.map((trip, index) => mapBackendTripToHistory(trip, index));
+      } catch (error) {
+        const stored = await getStoredRides();
+        const base = Array.isArray(stored) ? stored : [];
+        mapped = base.map((item, index) => normalizeTripFromApi(item, index));
+      }
       setTrips(mapped);
     } catch (error) {
       setTrips([]);
@@ -267,29 +288,17 @@ Share with: ${contact.name} (${phone})`;
           <Text style={styles.tripPartner}>with {trip.partner}</Text>
           <Text style={styles.tripFare}>₹{trip.fare}</Text>
         </View>
-<<<<<<< HEAD
-        <ChevronRight size={18} color={COLORS.text.tertiary} style={styles.tripChevron} />
-=======
         <ChevronRight size={18} color={colors.text.tertiary} style={styles.tripChevron} />
->>>>>>> aditya mule delay zala ahe sagla
       </TouchableOpacity>
     );
   }
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-      <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color={COLORS.text.primary} />
-=======
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={colors.text.primary} />
->>>>>>> aditya mule delay zala ahe sagla
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trip History</Text>
         <View style={styles.headerSpacer} />
@@ -299,16 +308,12 @@ Share with: ${contact.name} (${phone})`;
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
-<<<<<<< HEAD
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.text.secondary} colors={[COLORS.text.primary]} />
-=======
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={colors.text.secondary}
             colors={[colors.text.primary]}
           />
->>>>>>> aditya mule delay zala ahe sagla
         }
       >
         <View style={styles.filtersRow}>
@@ -365,16 +370,12 @@ Share with: ${contact.name} (${phone})`;
           </TouchableOpacity>
         </View>
       </ScrollView>
-<<<<<<< HEAD
-      <TripDetailOverlay trip={selectedTrip} onClose={() => setSelectedTrip(null)} onShareRequest={handleTripShareRequest} />
-=======
       <TripDetailOverlay
         trip={selectedTrip}
         onClose={() => setSelectedTrip(null)}
         onShareRequest={handleTripShareRequest}
         styles={styles}
       />
->>>>>>> aditya mule delay zala ahe sagla
       <ContactsPermissionOverlay visible={contactsPromptVisible} onAllow={handleAllowContacts} onDismiss={handleDismissContactsPrompt} />
       <ContactPickerSheet
         visible={contactPickerVisible}
@@ -389,11 +390,7 @@ Share with: ${contact.name} (${phone})`;
   );
 }
 
-<<<<<<< HEAD
-function TripDetailOverlay({ trip, onClose, onShareRequest }) {
-=======
 function TripDetailOverlay({ trip, onClose, onShareRequest, styles }) {
->>>>>>> aditya mule delay zala ahe sagla
   if (!trip) {
     return null;
   }
@@ -433,476 +430,375 @@ function TripDetailOverlay({ trip, onClose, onShareRequest, styles }) {
   );
 }
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-=======
+
 function getStyles(colors) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-<<<<<<< HEAD
-    borderBottomColor: COLORS.border.subtle,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: COLORS.text.primary,
-=======
-    borderBottomColor: colors.border.subtle,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  headerSpacer: {
-    width: 24,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: SPACING.md,
-  },
-  filtersRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  filterChip: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.md,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-    borderRadius: RADIUS.sm,
-  },
-  filterChipActive: {
-    borderColor: COLORS.text.primary,
-    backgroundColor: COLORS.bg.elevated,
-  },
-  filterText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-  },
-  filterTextActive: {
-    color: COLORS.text.primary,
-=======
-    borderColor: colors.border.default,
-    borderRadius: RADIUS.sm,
-  },
-  filterChipActive: {
-    borderColor: colors.text.primary,
-    backgroundColor: colors.bg.elevated,
-  },
-  filterText: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.secondary,
-  },
-  filterTextActive: {
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-  },
-  statsCard: {
-    padding: SPACING.md,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.lg,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: SPACING.md,
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  statValue: {
-    ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.xs,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  statDivider: {
-    width: 1,
-    height: '100%',
-<<<<<<< HEAD
-    backgroundColor: COLORS.border.subtle,
-=======
-    backgroundColor: colors.border.subtle,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  statsDetail: {
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-<<<<<<< HEAD
-    borderTopColor: COLORS.border.subtle,
-=======
-    borderTopColor: colors.border.subtle,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripsSection: {
-    marginTop: SPACING.sm,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: SPACING.sm,
-    paddingHorizontal: SPACING.xs,
-  },
-  dateGroup: {
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.xs,
-  },
-  dateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.xs,
-  },
-  dateTitle: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-  },
-  dateMeta: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.primary,
-  },
-  dateMeta: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripCard: {
-    position: 'relative',
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.bg.card,
-=======
-    borderColor: colors.border.default,
-    borderRadius: RADIUS.sm,
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  tripDate: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripType: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  tripRoute: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.xs,
-  },
-  tripFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  tripPartner: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripFare: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  tripChevron: {
-    position: 'absolute',
-    right: SPACING.md,
-    top: '50%',
-    marginTop: -9,
-  },
-  detailOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  detailCard: {
-    width: '85%',
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-    backgroundColor: COLORS.bg.elevated,
-=======
-    borderColor: colors.border.default,
-    backgroundColor: colors.bg.elevated,
->>>>>>> aditya mule delay zala ahe sagla
-    padding: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  detailTitle: {
-    ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-  },
-  detailRoute: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
-  },
-  detailRoute: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-  },
-  detailMeta: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.sm,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailLabel: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-  },
-  detailValue: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-=======
-    color: colors.text.tertiary,
-  },
-  detailValue: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-  },
-  detailActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.md,
-    gap: SPACING.sm,
-  },
-  detailShare: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.text.primary,
-=======
-    borderColor: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    alignItems: 'center',
-  },
-  detailShareText: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-  },
-  detailClose: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    alignItems: 'center',
-  },
-  detailCloseText: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  pickerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: RADIUS.lg,
-    borderTopRightRadius: RADIUS.lg,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-    backgroundColor: COLORS.bg.elevated,
-=======
-    borderColor: colors.border.default,
-    backgroundColor: colors.bg.elevated,
->>>>>>> aditya mule delay zala ahe sagla
-    maxHeight: '60%',
-    padding: SPACING.md,
-  },
-  pickerTitle: {
-    ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.sm,
-  },
-  pickerList: {
-    flexGrow: 0,
-  },
-  contactRow: {
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-<<<<<<< HEAD
-    borderBottomColor: COLORS.border.subtle,
-  },
-  contactName: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-  },
-  contactPhone: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-=======
-    borderBottomColor: colors.border.subtle,
-  },
-  contactName: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.primary,
-  },
-  contactPhone: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginTop: 2,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.xs,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  loadMore: {
-    alignItems: 'center',
-    paddingVertical: SPACING.md,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: RADIUS.sm,
-    marginTop: SPACING.md,
-  },
-  loadMoreText: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-  },
-});
-=======
-    color: colors.text.secondary,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+    },
+    headerSpacer: {
+      width: 24,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: SPACING.md,
+    },
+    filtersRow: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      marginBottom: SPACING.md,
+    },
+    filterChip: {
+      paddingVertical: 8,
+      paddingHorizontal: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+    },
+    filterChipActive: {
+      borderColor: colors.text.primary,
+      backgroundColor: colors.bg.elevated,
+    },
+    filterText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+    },
+    filterTextActive: {
+      color: colors.text.primary,
+      fontWeight: '600',
+    },
+    statsCard: {
+      padding: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.md,
+      marginBottom: SPACING.lg,
+    },
+    statRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: SPACING.md,
+    },
+    stat: {
+      alignItems: 'center',
+    },
+    statValue: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    statLabel: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+    },
+    statDivider: {
+      width: 1,
+      height: '100%',
+      backgroundColor: colors.border.subtle,
+    },
+    statsDetail: {
+      paddingTop: SPACING.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.subtle,
+    },
+    statsDetailText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+      textAlign: 'center',
+    },
+    tripsSection: {
+      marginTop: SPACING.sm,
+    },
+    sectionTitle: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: SPACING.sm,
+      paddingHorizontal: SPACING.xs,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: SPACING.lg,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+      textAlign: 'center',
+    },
+    dateGroup: {
+      marginBottom: SPACING.md,
+      paddingHorizontal: SPACING.xs,
+    },
+    dateHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: SPACING.xs,
+    },
+    dateTitle: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+    },
+    dateMeta: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+    },
+    tripCard: {
+      position: 'relative',
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+      backgroundColor: colors.bg.card,
+    },
+    tripHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.xs,
+    },
+    tripDate: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+    },
+    tripType: {
+      ...TYPOGRAPHY.caption,
+      fontSize: 11,
+      color: colors.text.tertiary,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
+    tripRoute: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    tripFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    tripPartner: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+    },
+    tripFare: {
+      ...TYPOGRAPHY.body,
+      fontWeight: '600',
+      color: colors.text.primary,
+    },
+    tripChevron: {
+      position: 'absolute',
+      right: SPACING.md,
+      top: '50%',
+      marginTop: -9,
+    },
+    detailOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    detailCard: {
+      width: '85%',
+      borderRadius: RADIUS.lg,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      backgroundColor: colors.bg.elevated,
+      padding: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    detailTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+    },
+    detailRoute: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      fontWeight: '600',
+    },
+    detailMeta: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+      marginBottom: SPACING.sm,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    detailLabel: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+    },
+    detailValue: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      fontWeight: '600',
+    },
+    detailActionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: SPACING.md,
+      gap: SPACING.sm,
+    },
+    detailShare: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      borderRadius: RADIUS.sm,
+      borderWidth: 1,
+      borderColor: colors.text.primary,
+      alignItems: 'center',
+    },
+    detailShareText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      fontWeight: '600',
+    },
+    detailClose: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      borderRadius: RADIUS.sm,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      alignItems: 'center',
+    },
+    detailCloseText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+    },
+    permissionOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+    },
+    permissionCard: {
+      width: '85%',
+      borderRadius: RADIUS.lg,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      backgroundColor: colors.bg.elevated,
+      padding: SPACING.lg,
+      gap: SPACING.sm,
+    },
+    permissionTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+    },
+    permissionText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.secondary,
+    },
+    permissionActions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: SPACING.sm,
+      marginTop: SPACING.sm,
+    },
+    permissionButtonPrimary: {
+      flex: 1,
+      backgroundColor: colors.button.primaryBg,
+      borderRadius: RADIUS.sm,
+      paddingVertical: SPACING.sm,
+      alignItems: 'center',
+    },
+    permissionButtonPrimaryText: {
+      ...TYPOGRAPHY.body,
+      color: colors.button.primaryText,
+      fontWeight: '700',
+    },
+    permissionButtonGhost: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+      paddingVertical: SPACING.sm,
+      alignItems: 'center',
+    },
+    permissionButtonGhostText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      fontWeight: '600',
+    },
+    pickerScrim: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    pickerOverlay: {
+      borderTopLeftRadius: RADIUS.lg,
+      borderTopRightRadius: RADIUS.lg,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      backgroundColor: colors.bg.elevated,
+      maxHeight: '60%',
+      padding: SPACING.md,
+    },
+    pickerTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+      marginBottom: SPACING.sm,
+    },
+    pickerList: {
+      flexGrow: 0,
+    },
+    emptyContactsText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+      textAlign: 'center',
+      paddingVertical: SPACING.md,
+    },
+    contactRow: {
+      paddingVertical: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+    },
+    contactName: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+    },
+    contactPhone: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+      marginTop: 2,
+    },
+    loadMore: {
+      alignItems: 'center',
+      paddingVertical: SPACING.md,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+      marginTop: SPACING.md,
+    },
+    loadMoreText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.secondary,
+    },
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default TripHistoryScreen;

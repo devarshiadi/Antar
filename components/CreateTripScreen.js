@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,22 +21,18 @@ import {
   DollarSign,
   Search,
 } from 'lucide-react-native';
-<<<<<<< HEAD
-import { COLORS } from '../constants/theme';
-=======
->>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
+import { useSession } from '../helpers/session-context';
+import { tripService } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 
-const CreateTripScreen = ({ navigation, route }) => {
+function CreateTripScreen({ navigation, route }) {
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
+  const { user: sessionUser } = useSession();
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const { tripType = 'offer' } = route.params || {};
   const [sourceLocation, setSourceLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
@@ -44,7 +40,7 @@ const CreateTripScreen = ({ navigation, route }) => {
   const [price, setPrice] = useState('');
 
   // Auto-set date and time
-  const getDefaultDateTime = () => {
+  function getDefaultDateTime() {
     const now = new Date();
     // Add 10 minutes
     now.setMinutes(now.getMinutes() + 10);
@@ -55,44 +51,75 @@ const CreateTripScreen = ({ navigation, route }) => {
     const time = `${hours}:${minutes}`;
     
     return { date, time };
-  };
+  }
 
   const { date: defaultDate, time: defaultTime } = getDefaultDateTime();
   const [departureDate, setDepartureDate] = useState(defaultDate);
   const [departureTime, setDepartureTime] = useState(defaultTime);
 
-  const openLocationPicker = () => {
+  useEffect(() => {
+    const locations = route.params?.locations;
+    if (!locations || !locations.pickup || !locations.destination) {
+      return;
+    }
+    setSourceLocation(locations.pickup);
+    setDestLocation(locations.destination);
+    navigation.setParams({ locations: undefined });
+  }, [navigation, route.params?.locations]);
+
+  function openLocationPicker() {
     navigation.navigate('LocationPicker', {
       tripType,
+      returnScreen: 'CreateTrip',
     });
-  };
+  }
 
-  const handleCreateTrip = () => {
+  async function handleCreateTrip() {
     if (!sourceLocation || !destLocation) {
       alert('Please select both pickup and destination locations');
       return;
     }
 
-    console.log('Creating trip:', {
-      tripType,
-      source: sourceLocation,
-      destination: destLocation,
-      departureDate,
-      departureTime,
-      seats,
-      price,
-    });
-    
-    // Navigate to matches
-    navigation.navigate('Matches');
-  };
+    const trimmedPrice = String(price || '').trim();
+    const parsedPrice = parseFloat(trimmedPrice);
+    if (!trimmedPrice || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+      alert('Please enter a valid price');
+      return;
+    }
+
+    const parsedSeats = parseInt(String(seats || '1'), 10);
+    const seatsAvailable = Number.isNaN(parsedSeats) ? 1 : parsedSeats;
+
+    try {
+      const createdTrip = await tripService.createTrip({
+        trip_type: tripType === 'request' ? 'request' : 'offer',
+        origin_latitude: sourceLocation.latitude,
+        origin_longitude: sourceLocation.longitude,
+        origin_address: sourceLocation.address,
+        destination_latitude: destLocation.latitude,
+        destination_longitude: destLocation.longitude,
+        destination_address: destLocation.address,
+        departure_date: departureDate,
+        departure_time: departureTime,
+        seats_available: tripType === 'offer' ? seatsAvailable : null,
+        price: parsedPrice,
+      });
+
+      navigation.navigate('Matches', {
+        tripType: tripType === 'request' ? 'find' : 'offer',
+        viewerRole: tripType === 'request' ? 'seeker' : 'offerer',
+        tripId: createdTrip?.id,
+        source: sourceLocation,
+        destination: destLocation,
+        currentUser: route.params?.currentUser || sessionUser || null,
+      });
+    } catch (error) {
+      alert(typeof error === 'string' ? error : 'Failed to create trip. Please try again.');
+    }
+  }
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-=======
     <SafeAreaView style={styles.container} edges={['top']}>
->>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       
       {/* Header */}
@@ -256,208 +283,8 @@ const CreateTripScreen = ({ navigation, route }) => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  backButton: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  tripTypeIndicator: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 10,
-    marginBottom: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.accent.primary,
-  },
-  tripTypeIndicatorText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  locationToggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  locationToggleLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  locationToggleText: {
-    fontSize: 15,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: '#ccc',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  locationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-  },
-  locationButtonText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#888',
-  },
-  locationButtonTextSelected: {
-    color: '#fff',
-  },
-  mapPickerCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#2a2a2a',
-  },
-  mapPickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  mapPickerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginLeft: 12,
-  },
-  mapPickerSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 12,
-  },
-  selectedLocations: {
-    marginBottom: 12,
-  },
-  selectedLocationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  locationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  selectedLocationText: {
-    fontSize: 14,
-    color: '#fff',
-    flex: 1,
-  },
-  mapPickerFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#2a2a2a',
-  },
-  mapPickerFooterText: {
-    fontSize: 14,
-    color: COLORS.accent.primary,
-    marginLeft: 8,
-    fontWeight: '600',
-  },
-  autoFilledText: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.accent.primary,
-    fontWeight: '500',
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#fff',
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  infoCard: {
-    backgroundColor: '#1a1a1a',
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 10,
-    marginBottom: 25,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.accent.primary,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#ccc',
-    lineHeight: 20,
-  },
-  createButton: {
-    backgroundColor: COLORS.button.primaryBg,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  createButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.button.primaryText,
-  },
-});
-=======
 function getStyles(colors) {
   return StyleSheet.create({
     container: {
@@ -618,10 +445,9 @@ function getStyles(colors) {
     createButtonText: {
       fontSize: 18,
       fontWeight: 'bold',
-      color: colors.button.primaryText,
+      color: '#fff',
     },
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default CreateTripScreen;

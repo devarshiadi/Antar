@@ -1,11 +1,13 @@
 import * as Location from 'expo-location';
 import { userService } from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function createLocationService() {
   let watchId = null;
   let isTracking = false;
   let updateInterval = null;
   let hasLoggedUpdateError = false;
+  const listeners = new Set();
 
   // Request location permissions
   async function requestPermissions() {
@@ -62,9 +64,23 @@ function createLocationService() {
 
   // Start watching location in real-time
   async function startTracking(onLocationUpdate, isActiveTrip = false) {
+    const entry = {
+      callback: typeof onLocationUpdate === 'function' ? onLocationUpdate : null,
+      isActiveTrip: !!isActiveTrip,
+    };
+    if (entry.callback) {
+      listeners.add(entry);
+    }
+
+    function unsubscribe() {
+      listeners.delete(entry);
+      if (listeners.size === 0) {
+        stopTrackingInternal();
+      }
+    }
+
     if (isTracking) {
-      console.log('Already tracking');
-      return;
+      return unsubscribe;
     }
 
     try {
@@ -90,17 +106,24 @@ function createLocationService() {
             accuracy: location.coords.accuracy,
             speed: location.coords.speed,
             heading: location.coords.heading,
-            is_active_trip: isActiveTrip,
           };
 
+          const activeForServer = Array.from(listeners).some((item) => item.isActiveTrip);
+
           // Callback for UI updates
-          if (onLocationUpdate) {
-            onLocationUpdate(locationData);
-          }
+          listeners.forEach((item) => {
+            if (!item.callback) {
+              return;
+            }
+            item.callback({ ...locationData, is_active_trip: item.isActiveTrip });
+          });
 
           // Send to backend every update; if offline or server fails, log once and continue silently
           try {
-            await userService.updateLocation(locationData);
+            const token = await AsyncStorage.getItem('access_token');
+            if (token) {
+              await userService.updateLocation({ ...locationData, is_active_trip: activeForServer });
+            }
           } catch (error) {
             if (!hasLoggedUpdateError) {
               console.log('Failed to update location on server. Tracking continues locally.');
@@ -111,15 +134,17 @@ function createLocationService() {
       );
 
       console.log('Location tracking started');
+      return unsubscribe;
     } catch (error) {
       console.error('Start tracking error:', error);
       isTracking = false;
+      listeners.delete(entry);
       throw error;
     }
   }
 
   // Stop watching location
-  function stopTracking() {
+  function stopTrackingInternal() {
     if (watchId) {
       watchId.remove();
       watchId = null;
@@ -132,6 +157,11 @@ function createLocationService() {
 
     isTracking = false;
     console.log('Location tracking stopped');
+  }
+
+  function stopTracking() {
+    listeners.clear();
+    stopTrackingInternal();
   }
 
   // Get address from coordinates (reverse geocoding)

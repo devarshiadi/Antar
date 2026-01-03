@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from 'react';
-=======
 import React, { useMemo, useState, useEffect } from 'react';
->>>>>>> aditya mule delay zala ahe sagla
 import {
   View,
   Text,
@@ -27,25 +23,21 @@ import {
   Hash,
   DollarSign,
 } from 'lucide-react-native';
-<<<<<<< HEAD
-import { COLORS } from '../../constants/theme';
-=======
->>>>>>> aditya mule delay zala ahe sagla
 import { addRide } from '../../helpers/rides-storage';
 import { saveGlobalRoute, loadGlobalRoute } from '../../helpers/location-storage';
 import { useAppTheme } from '../../helpers/use-app-theme';
+import { useSession } from '../../helpers/session-context';
+import { tripService } from '../../services/api';
 
 const STORAGE_KEY = '@offer_ride_user_data';
 
 export function OfferRideScreen({ navigation, route }) {
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
+  const { user: sessionUser } = useSession();
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
-  const currentUser = route.params?.currentUser || null;
+  const currentUser = route.params?.currentUser || sessionUser || null;
   const [vehicleType, setVehicleType] = useState('car');
   const [seatCount, setSeatCount] = useState(2);
   const [sourceLocation, setSourceLocation] = useState(null);
@@ -202,7 +194,30 @@ export function OfferRideScreen({ navigation, route }) {
 
     await saveUserData();
 
-    const rideId = Date.now();
+    const now = new Date();
+    const departureDate = now.toISOString().split('T')[0];
+    const departureTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    let createdTrip = null;
+    try {
+      createdTrip = await tripService.createTrip({
+        trip_type: 'offer',
+        origin_latitude: sourceLocation.latitude,
+        origin_longitude: sourceLocation.longitude,
+        origin_address: sourceLocation.address,
+        destination_latitude: destinationLocation.latitude,
+        destination_longitude: destinationLocation.longitude,
+        destination_address: destinationLocation.address,
+        departure_date: departureDate,
+        departure_time: departureTime,
+        seats_available: seatCount,
+        price: numericPrice,
+      });
+    } catch (error) {
+      createdTrip = null;
+    }
+
+    const rideId = createdTrip?.id ?? Date.now();
     const ride = {
       id: rideId,
       driverId: currentUser?.id ?? `driver-${rideId}`,
@@ -212,7 +227,7 @@ export function OfferRideScreen({ navigation, route }) {
       rating: currentUser?.rating ?? 4.8,
       from: sourceLocation.address || 'Pickup',
       to: destinationLocation.address || 'Drop',
-      time: new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }),
+      time: departureTime,
       price: numericPrice,
       seats: seatCount,
       vehicleType,
@@ -230,6 +245,7 @@ export function OfferRideScreen({ navigation, route }) {
       vehicleType,
       seatCount,
       price: numericPrice,
+      tripId: createdTrip?.id,
       source: sourceLocation,
       destination: destinationLocation,
       currentUser,
@@ -248,22 +264,14 @@ export function OfferRideScreen({ navigation, route }) {
   }
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-=======
     <SafeAreaView style={styles.container} edges={['top']}>
->>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-<<<<<<< HEAD
-          <ArrowLeft size={24} color={COLORS.text.primary} />
-=======
           <ArrowLeft size={24} color={colors.text.primary} />
->>>>>>> aditya mule delay zala ahe sagla
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Offer a Ride</Text>
         <View style={styles.headerRight} />
@@ -274,19 +282,11 @@ export function OfferRideScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>Your Information</Text>
 
           <View style={styles.inputContainer}>
-<<<<<<< HEAD
-            <User size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#666"
-=======
             <User size={20} color={colors.text.secondary} />
             <TextInput
               style={styles.input}
               placeholder="Full Name"
               placeholderTextColor={colors.text.tertiary}
->>>>>>> aditya mule delay zala ahe sagla
               value={userName}
               onChangeText={setUserName}
               autoCapitalize="words"
@@ -294,19 +294,11 @@ export function OfferRideScreen({ navigation, route }) {
           </View>
 
           <View style={styles.inputContainer}>
-<<<<<<< HEAD
-            <Phone size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              placeholderTextColor="#666"
-=======
             <Phone size={20} color={colors.text.secondary} />
             <TextInput
               style={styles.input}
               placeholder="Phone Number"
               placeholderTextColor={colors.text.tertiary}
->>>>>>> aditya mule delay zala ahe sagla
               value={phoneNumber}
               onChangeText={setPhoneNumber}
               keyboardType="phone-pad"
@@ -315,19 +307,11 @@ export function OfferRideScreen({ navigation, route }) {
           </View>
 
           <View style={styles.inputContainer}>
-<<<<<<< HEAD
-            <Hash size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              placeholder="Vehicle Number (e.g., DL01AB1234)"
-              placeholderTextColor="#666"
-=======
             <Hash size={20} color={colors.text.secondary} />
             <TextInput
               style={styles.input}
               placeholder="Vehicle Number (e.g., DL01AB1234)"
               placeholderTextColor={colors.text.tertiary}
->>>>>>> aditya mule delay zala ahe sagla
               value={vehicleNumber}
               onChangeText={(text) => setVehicleNumber(text.toUpperCase())}
               autoCapitalize="characters"
@@ -352,11 +336,7 @@ export function OfferRideScreen({ navigation, route }) {
               </View>
               <Car
                 size={28}
-<<<<<<< HEAD
-                color={vehicleType === 'car' ? '#000' : '#fff'}
-=======
                 color={vehicleType === 'car' ? colors.button.primaryText : colors.text.primary}
->>>>>>> aditya mule delay zala ahe sagla
               />
               <Text
                 style={[
@@ -381,11 +361,7 @@ export function OfferRideScreen({ navigation, route }) {
               </View>
               <Bike
                 size={28}
-<<<<<<< HEAD
-                color={vehicleType === 'bike' ? '#000' : '#fff'}
-=======
                 color={vehicleType === 'bike' ? colors.button.primaryText : colors.text.primary}
->>>>>>> aditya mule delay zala ahe sagla
               />
               <Text
                 style={[
@@ -403,11 +379,7 @@ export function OfferRideScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>Available Seats</Text>
           {vehicleType === 'bike' ? (
             <View style={styles.seatInfo}>
-<<<<<<< HEAD
-              <Users size={20} color={COLORS.accent.primary} />
-=======
               <Users size={20} color={colors.accent.primary} />
->>>>>>> aditya mule delay zala ahe sagla
               <Text style={styles.seatInfoText}>1 seat (pillion rider)</Text>
             </View>
           ) : (
@@ -439,22 +411,15 @@ export function OfferRideScreen({ navigation, route }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Price per Seat</Text>
           <View style={styles.inputContainer}>
-<<<<<<< HEAD
-            <DollarSign size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              placeholder="₹ 100"
-              placeholderTextColor="#666"
-=======
             <DollarSign size={20} color={colors.text.secondary} />
             <TextInput
               style={styles.input}
               placeholder="₹ 100"
               placeholderTextColor={colors.text.tertiary}
->>>>>>> aditya mule delay zala ahe sagla
               keyboardType="numeric"
               value={price}
               onChangeText={setPrice}
+              maxLength={6}
             />
           </View>
         </View>
@@ -474,11 +439,7 @@ export function OfferRideScreen({ navigation, route }) {
                 {sourceLocation ? sourceLocation.address : 'Select pickup point'}
               </Text>
             </View>
-<<<<<<< HEAD
-            <Navigation size={20} color={COLORS.accent.primary} />
-=======
             <Navigation size={20} color={colors.accent.primary} />
->>>>>>> aditya mule delay zala ahe sagla
           </TouchableOpacity>
 
           <View style={styles.locationDivider} />
@@ -530,381 +491,240 @@ export function OfferRideScreen({ navigation, route }) {
   );
 }
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-=======
 function getStyles(colors) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  headerRight: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-<<<<<<< HEAD
-    color: '#fff',
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 12,
-    minHeight: 56,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-<<<<<<< HEAD
-    color: '#fff',
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  vehicleOptions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  vehicleOption: {
-    flex: 1,
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 140,
-    borderWidth: 2,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-  },
-  vehicleOptionActive: {
-    backgroundColor: COLORS.button.primaryBg,
-    borderColor: COLORS.button.primaryBg,
-=======
-    borderColor: colors.border.default,
-  },
-  vehicleOptionActive: {
-    backgroundColor: colors.button.primaryBg,
-    borderColor: colors.button.primaryBg,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-<<<<<<< HEAD
-    borderColor: '#666',
-=======
-    borderColor: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-<<<<<<< HEAD
-    backgroundColor: '#000',
-=======
-    backgroundColor: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  vehicleText: {
-    fontSize: 16,
-    fontWeight: '600',
-<<<<<<< HEAD
-    color: '#fff',
-    marginTop: 12,
-  },
-  vehicleTextActive: {
-    color: '#000',
-=======
-    color: colors.text.primary,
-    marginTop: 12,
-  },
-  vehicleTextActive: {
-    color: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  seatInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  seatInfoText: {
-    fontSize: 15,
-<<<<<<< HEAD
-    color: '#fff',
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '500',
-  },
-  seatOptions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  seatButton: {
-    flex: 1,
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 12,
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 64,
-    borderWidth: 2,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-  },
-  seatButtonActive: {
-    backgroundColor: COLORS.accent.primary,
-    borderColor: COLORS.accent.primary,
-=======
-    borderColor: colors.border.default,
-  },
-  seatButtonActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  seatButtonText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-<<<<<<< HEAD
-    color: '#666',
-  },
-  seatButtonTextActive: {
-    color: '#fff',
-=======
-    color: colors.text.tertiary,
-  },
-  seatButtonTextActive: {
-    color: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  locationInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-<<<<<<< HEAD
-    backgroundColor: COLORS.bg.card,
-=======
-    backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    minHeight: 64,
-  },
-  locationDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  locationDotSource: {
-<<<<<<< HEAD
-    backgroundColor: COLORS.accent.primary,
-=======
-    backgroundColor: colors.accent.primary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  locationDotDestination: {
-    backgroundColor: '#F44336',
-  },
-  locationInputContent: {
-    flex: 1,
-    marginRight: 12,
-  },
-  locationLabel: {
-    fontSize: 12,
-<<<<<<< HEAD
-    color: '#888',
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: 4,
-  },
-  locationValue: {
-    fontSize: 15,
-<<<<<<< HEAD
-    color: '#fff',
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '500',
-  },
-  locationDivider: {
-    height: 1,
-<<<<<<< HEAD
-    backgroundColor: COLORS.border.default,
-=======
-    backgroundColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    marginLeft: 24,
-    marginVertical: 12,
-  },
-  infoBox: {
-<<<<<<< HEAD
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-=======
-    backgroundColor: colors.bg.elevated,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: 'rgba(0, 255, 255, 0.25)',
-  },
-  infoText: {
-    fontSize: 14,
-    color: COLORS.accent.primary,
-=======
-    borderColor: colors.border.default,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.accent.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    lineHeight: 20,
-  },
-  footer: {
-    paddingTop: 8,
-    paddingBottom: 24,
-    gap: 8,
-  },
-  confirmButton: {
-<<<<<<< HEAD
-    backgroundColor: COLORS.button.primaryBg,
-=======
-    backgroundColor: colors.button.primaryBg,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 12,
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  confirmButtonText: {
-<<<<<<< HEAD
-    color: COLORS.button.primaryText,
-=======
-    color: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-<<<<<<< HEAD
-    backgroundColor: COLORS.button.secondaryBg,
-=======
-    backgroundColor: colors.button.secondaryBg,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-    marginBottom: 8,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.button.secondaryBorder,
-  },
-  secondaryButtonText: {
-    color: COLORS.button.secondaryText,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});
-=======
-    borderColor: colors.button.secondaryBorder,
-  },
-  secondaryButtonText: {
-    color: colors.button.secondaryText,
-    fontSize: 15,
-    fontWeight: '600',
-  },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.bg.card,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text.primary,
+    },
+    headerRight: {
+      width: 40,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    section: {
+      marginBottom: 32,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginBottom: 16,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.bg.card,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      marginBottom: 12,
+      minHeight: 56,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      gap: 12,
+    },
+    input: {
+      flex: 1,
+      color: colors.text.primary,
+      fontSize: 15,
+      fontWeight: '500',
+    },
+    vehicleOptions: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    vehicleOption: {
+      flex: 1,
+      backgroundColor: colors.bg.card,
+      borderRadius: 16,
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 140,
+      borderWidth: 2,
+      borderColor: colors.border.default,
+    },
+    vehicleOptionActive: {
+      backgroundColor: colors.button.primaryBg,
+      borderColor: colors.button.primaryBg,
+    },
+    radioOuter: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: colors.text.tertiary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    radioInner: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.button.primaryText,
+    },
+    vehicleText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text.primary,
+      marginTop: 12,
+    },
+    vehicleTextActive: {
+      color: colors.button.primaryText,
+    },
+    seatInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.bg.card,
+      padding: 16,
+      borderRadius: 12,
+      gap: 12,
+    },
+    seatInfoText: {
+      fontSize: 15,
+      color: colors.text.primary,
+      fontWeight: '500',
+    },
+    seatOptions: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    seatButton: {
+      flex: 1,
+      backgroundColor: colors.bg.card,
+      borderRadius: 12,
+      paddingVertical: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 64,
+      borderWidth: 2,
+      borderColor: colors.border.default,
+    },
+    seatButtonActive: {
+      backgroundColor: colors.accent.primary,
+      borderColor: colors.accent.primary,
+    },
+    seatButtonText: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text.tertiary,
+    },
+    seatButtonTextActive: {
+      color: colors.button.primaryText,
+    },
+    locationInput: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.bg.card,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      minHeight: 64,
+    },
+    locationDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: 12,
+    },
+    locationDotSource: {
+      backgroundColor: colors.accent.primary,
+    },
+    locationDotDestination: {
+      backgroundColor: '#F44336',
+    },
+    locationInputContent: {
+      flex: 1,
+      marginRight: 12,
+    },
+    locationLabel: {
+      fontSize: 12,
+      color: colors.text.secondary,
+      marginBottom: 4,
+    },
+    locationValue: {
+      fontSize: 15,
+      color: colors.text.primary,
+      fontWeight: '500',
+    },
+    locationDivider: {
+      height: 1,
+      backgroundColor: colors.border.default,
+      marginLeft: 24,
+      marginVertical: 12,
+    },
+    infoBox: {
+      backgroundColor: colors.bg.elevated,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.accent.primary,
+      lineHeight: 20,
+    },
+    footer: {
+      paddingTop: 8,
+      paddingBottom: 24,
+      gap: 8,
+    },
+    confirmButton: {
+      backgroundColor: colors.button.primaryBg,
+      borderRadius: 12,
+      paddingVertical: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 56,
+    },
+    confirmButtonText: {
+      color: colors.button.primaryText,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    secondaryButton: {
+      backgroundColor: colors.button.secondaryBg,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 56,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.button.secondaryBorder,
+    },
+    secondaryButtonText: {
+      color: colors.button.secondaryText,
+      fontSize: 15,
+      fontWeight: '600',
+    },
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default OfferRideScreen;

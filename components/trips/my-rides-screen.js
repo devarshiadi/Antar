@@ -12,20 +12,48 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
-<<<<<<< HEAD
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
-=======
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
->>>>>>> aditya mule delay zala ahe sagla
 import { getStoredRides, getRideRequests, updateRideStatus, updateRide, updateRideRequest } from '../../helpers/rides-storage';
 import { addNotification, markNotificationsForRide } from '../../helpers/notifications-storage';
 import { useAppTheme } from '../../helpers/use-app-theme';
+import { useSession } from '../../helpers/session-context';
+import { tripService } from '../../services/api';
 
 function filterRidesForUser(rides, user) {
   if (!user || !user.id) {
     return rides;
   }
   return rides.filter((ride) => ride.driverId === user.id);
+}
+
+function mapBackendTripToRide(trip) {
+  if (!trip || typeof trip !== 'object') {
+    return null;
+  }
+  const status = String(trip.status || '').toLowerCase();
+  const mappedStatus =
+    status === 'cancelled'
+      ? 'cancelled'
+      : status === 'completed'
+      ? 'completed'
+      : status === 'matched' || status === 'in_progress'
+      ? 'accepted'
+      : 'available';
+  return {
+    id: trip.id,
+    driverId: trip.user_id,
+    driverName: trip.user?.full_name,
+    name: trip.user?.full_name,
+    from: trip.origin_address,
+    to: trip.destination_address,
+    time: `${trip.departure_date || ''} ${trip.departure_time || ''}`.trim(),
+    price: trip.price,
+    seats: trip.seats_available || 1,
+    vehicleType: 'car',
+    vehicleNumber: trip.user?.vehicle_plate || '—',
+    status: mappedStatus,
+    isStored: false,
+  };
 }
 
 function groupRequestsByRide(requests) {
@@ -99,11 +127,7 @@ function getStatusLabel(status) {
   return value.toUpperCase();
 }
 
-<<<<<<< HEAD
-function RideCard({ ride, requests, canCancel, onCancelPress, onRequestAction }) {
-=======
 function RideCard({ ride, requests, canCancel, onCancelPress, onRequestAction, styles }) {
->>>>>>> aditya mule delay zala ahe sagla
   const summary = getRequestSummary(requests);
   const hasRequests = summary.total > 0;
 
@@ -210,14 +234,12 @@ function RideCard({ ride, requests, canCancel, onCancelPress, onRequestAction, s
 }
 
 export function MyRidesScreen({ navigation, route }) {
-  const currentUser = route.params?.currentUser || null;
+  const { user: sessionUser } = useSession();
+  const currentUser = route.params?.currentUser || sessionUser || null;
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const [rides, setRides] = useState([]);
   const [rideRequests, setRideRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -238,10 +260,23 @@ export function MyRidesScreen({ navigation, route }) {
       setLoading(true);
     }
     try {
-      const [storedRides, storedRequests] = await Promise.all([getStoredRides(), getRideRequests()]);
-      const scopedRides = filterRidesForUser(storedRides, currentUser);
-      setRides(scopedRides);
+      const storedRequests = await getRideRequests();
       setRideRequests(storedRequests);
+
+      let nextRides = [];
+      try {
+        const apiTrips = await tripService.getMyTrips();
+        const list = Array.isArray(apiTrips) ? apiTrips : [];
+        nextRides = list
+          .filter((trip) => String(trip.trip_type || '').toLowerCase() === 'offer')
+          .map((trip) => mapBackendTripToRide(trip))
+          .filter((trip) => trip);
+      } catch (error) {
+        const storedRides = await getStoredRides();
+        nextRides = filterRidesForUser(storedRides, currentUser);
+      }
+
+      setRides(nextRides);
     } catch (error) {
       setRides([]);
       setRideRequests([]);
@@ -350,11 +385,7 @@ export function MyRidesScreen({ navigation, route }) {
 
   if (loading) {
     return (
-<<<<<<< HEAD
-      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-=======
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
->>>>>>> aditya mule delay zala ahe sagla
         <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
         <ActivityIndicator size="large" color={colors.text.primary} />
       </SafeAreaView>
@@ -362,11 +393,7 @@ export function MyRidesScreen({ navigation, route }) {
   }
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-=======
     <SafeAreaView style={styles.container} edges={['top']}>
->>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <View style={styles.header}>
         <TouchableOpacity
@@ -375,11 +402,7 @@ export function MyRidesScreen({ navigation, route }) {
           accessibilityLabel="Go back"
           activeOpacity={0.85}
         >
-<<<<<<< HEAD
-          <ArrowLeft size={24} color={COLORS.text.primary} />
-=======
           <ArrowLeft size={24} color={colors.text.primary} />
->>>>>>> aditya mule delay zala ahe sagla
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Rides</Text>
         <View style={styles.headerSpacer} />
@@ -393,13 +416,8 @@ export function MyRidesScreen({ navigation, route }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-<<<<<<< HEAD
-            tintColor={COLORS.text.secondary}
-            colors={[COLORS.text.primary]}
-=======
             tintColor={colors.text.secondary}
             colors={[colors.text.primary]}
->>>>>>> aditya mule delay zala ahe sagla
           />
         }
       >
@@ -419,10 +437,7 @@ export function MyRidesScreen({ navigation, route }) {
                 canCancel
                 onCancelPress={() => handleCancelRide(ride.id)}
                 onRequestAction={handleRequestAction}
-<<<<<<< HEAD
-=======
                 styles={styles}
->>>>>>> aditya mule delay zala ahe sagla
               />
             ))
           )}
@@ -442,10 +457,7 @@ export function MyRidesScreen({ navigation, route }) {
                 ride={ride}
                 requests={requestsByRideId[ride.id] || []}
                 onRequestAction={handleRequestAction}
-<<<<<<< HEAD
-=======
                 styles={styles}
->>>>>>> aditya mule delay zala ahe sagla
               />
             ))
           )}
@@ -457,16 +469,6 @@ export function MyRidesScreen({ navigation, route }) {
   );
 }
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-=======
 function getStyles(colors) {
   return StyleSheet.create({
   container: {
@@ -476,7 +478,6 @@ function getStyles(colors) {
   loadingContainer: {
     flex: 1,
     backgroundColor: colors.bg.primary,
->>>>>>> aditya mule delay zala ahe sagla
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -487,19 +488,11 @@ function getStyles(colors) {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-<<<<<<< HEAD
-    borderBottomColor: COLORS.border.subtle,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: COLORS.text.primary,
-=======
     borderBottomColor: colors.border.subtle,
   },
   headerTitle: {
     ...TYPOGRAPHY.title,
     color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
   },
   headerSpacer: {
     width: 24,
@@ -516,11 +509,7 @@ function getStyles(colors) {
   },
   sectionTitle: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
     color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: SPACING.sm,
@@ -528,13 +517,8 @@ function getStyles(colors) {
   rideCard: {
     borderRadius: RADIUS.md,
     borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-    backgroundColor: COLORS.bg.card,
-=======
     borderColor: colors.border.default,
     backgroundColor: colors.bg.card,
->>>>>>> aditya mule delay zala ahe sagla
     padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
@@ -546,21 +530,13 @@ function getStyles(colors) {
   },
   rideTitle: {
     ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
     color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
     flex: 1,
     marginRight: SPACING.sm,
   },
   rideStatus: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
     color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
   },
   rideMetaRow: {
     flexDirection: 'row',
@@ -569,28 +545,16 @@ function getStyles(colors) {
   },
   metaText: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-  },
-  metaDot: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.tertiary,
-=======
     color: colors.text.secondary,
   },
   metaDot: {
     ...TYPOGRAPHY.caption,
     color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
     marginHorizontal: 4,
   },
   metaSubText: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
     color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.sm,
   },
   requestsPillRow: {
@@ -598,38 +562,23 @@ function getStyles(colors) {
     paddingHorizontal: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
     borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
     alignSelf: 'flex-start',
   },
   requestsPillText: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
     color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
   },
   requestsPillRowMuted: {
     paddingVertical: 6,
     paddingHorizontal: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.subtle,
-=======
     borderColor: colors.border.subtle,
->>>>>>> aditya mule delay zala ahe sagla
     alignSelf: 'flex-start',
   },
   requestsPillMutedText: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-=======
     color: colors.text.tertiary,
   },
   requestsList: {
@@ -718,7 +667,6 @@ function getStyles(colors) {
     ...TYPOGRAPHY.body,
     color: colors.text.secondary,
     fontWeight: '600',
->>>>>>> aditya mule delay zala ahe sagla
   },
   emptyState: {
     paddingVertical: SPACING.lg,
@@ -726,30 +674,18 @@ function getStyles(colors) {
   },
   emptyTitle: {
     ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
     color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
     marginBottom: SPACING.xs,
   },
   emptyText: {
     ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
     color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
   },
   bottomSpacer: {
     height: 80,
   },
-<<<<<<< HEAD
-});
-=======
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default MyRidesScreen;
 

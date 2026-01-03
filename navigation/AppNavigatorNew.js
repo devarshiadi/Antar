@@ -1,13 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-<<<<<<< HEAD
-import { COLORS } from '../constants/theme';
-=======
->>>>>>> aditya mule delay zala ahe sagla
 import { getAppTheme } from '../helpers/use-app-theme';
+import { useSession } from '../helpers/session-context';
 
 // Auth Screens
 import WelcomeScreen from '../components/WelcomeScreen';
@@ -35,30 +31,7 @@ const Stack = createNativeStackNavigator();
 function AppNavigatorNew() {
   const colorScheme = useColorScheme();
   const { navigationTheme, colors } = getAppTheme(colorScheme);
-  const [bootstrapped, setBootstrapped] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [initialUser, setInitialUser] = useState(null);
-
-  useEffect(() => {
-    async function bootstrapSession() {
-      try {
-        const token = await AsyncStorage.getItem('access_token');
-        const userJson = await AsyncStorage.getItem('user');
-        if (token && userJson) {
-          setIsAuthenticated(true);
-          setInitialUser(JSON.parse(userJson));
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setBootstrapped(true);
-      }
-    }
-
-    bootstrapSession();
-  }, []);
+  const { bootstrapped, isAuthenticated } = useSession();
 
   if (!bootstrapped) {
     return (
@@ -90,7 +63,6 @@ function AppNavigatorNew() {
         <Stack.Screen
           name="Home"
           component={HomeScreenNew}
-          initialParams={initialUser ? { user: initialUser } : undefined}
         />
         <Stack.Screen name="Matches" component={MatchesScreenNew} />
         <Stack.Screen name="Notifications" component={NotificationsScreenNew} />

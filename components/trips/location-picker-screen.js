@@ -375,14 +375,24 @@ export function LocationPickerScreen({ navigation, route }) {
   const styles = useMemo(function () {
     return getStyles(colors, isDark);
   }, [colors, isDark]);
+  const hasInjectedInitialMarkersRef = useRef(false);
+  const unsubscribeTrackingRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destLocation, setDestLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pickupAddress, setPickupAddress] = useState('');
   const [destAddress, setDestAddress] = useState('');
+  const [mapReady, setMapReady] = useState(false);
 
-  const { tripType = 'offer', locationType, onLocationSelected, returnScreen } = route.params || {};
+  const {
+    tripType = 'offer',
+    locationType,
+    onLocationSelected,
+    returnScreen,
+    pickupLocation: initialPickup,
+    destinationLocation: initialDestination,
+  } = route.params || {};
   const requiresPickupOnly = locationType === 'source';
   const requiresDestinationOnly = locationType === 'destination';
   const confirmDisabled = locationType
@@ -393,22 +403,64 @@ export function LocationPickerScreen({ navigation, route }) {
 
   useEffect(() => {
     initializeLocation();
-    let stop = false;
     locationService
       .startTracking((loc) => {
-        if (webViewRef.current) {
-          const js = `window.updateUser(${loc.latitude}, ${loc.longitude});`;
-          webViewRef.current.injectJavaScript(js);
+        if (!webViewRef.current) {
+          return;
         }
+        const js = `window.updateUser(${loc.latitude}, ${loc.longitude}); true;`;
+        webViewRef.current.injectJavaScript(js);
+      })
+      .then((unsubscribe) => {
+        unsubscribeTrackingRef.current = typeof unsubscribe === 'function' ? unsubscribe : null;
       })
       .catch(() => {});
     return () => {
-      if (!stop) {
-        locationService.stopTracking();
-        stop = true;
+      if (unsubscribeTrackingRef.current) {
+        unsubscribeTrackingRef.current();
+        unsubscribeTrackingRef.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    const pickup = initialPickup && typeof initialPickup === 'object' ? initialPickup : null;
+    const destination = initialDestination && typeof initialDestination === 'object' ? initialDestination : null;
+
+    if (pickup && pickup.latitude && pickup.longitude) {
+      setPickupLocation({ latitude: pickup.latitude, longitude: pickup.longitude });
+      if (pickup.address) {
+        setPickupAddress(String(pickup.address));
+      }
+    }
+
+    if (destination && destination.latitude && destination.longitude) {
+      setDestLocation({ latitude: destination.latitude, longitude: destination.longitude });
+      if (destination.address) {
+        setDestAddress(String(destination.address));
+      }
+    }
+  }, [initialPickup, initialDestination]);
+
+  useEffect(() => {
+    if (!mapReady || !webViewRef.current || hasInjectedInitialMarkersRef.current) {
+      return;
+    }
+
+    if (pickupLocation && pickupLocation.latitude && pickupLocation.longitude) {
+      webViewRef.current.injectJavaScript(
+        `window.setPickup(${pickupLocation.latitude}, ${pickupLocation.longitude}); true;`,
+      );
+    }
+
+    if (destLocation && destLocation.latitude && destLocation.longitude) {
+      webViewRef.current.injectJavaScript(
+        `window.setDestination(${destLocation.latitude}, ${destLocation.longitude}); true;`,
+      );
+    }
+
+    hasInjectedInitialMarkersRef.current = true;
+  }, [mapReady, pickupLocation, destLocation]);
 
   async function initializeLocation() {
     try {
@@ -532,6 +584,13 @@ export function LocationPickerScreen({ navigation, route }) {
       },
     };
 
+    if (returnScreen) {
+      navigation.navigate(returnScreen, {
+        locations: locationsData,
+      });
+      return;
+    }
+
     navigation.navigate('Matches', {
       tripType,
       locations: locationsData,
@@ -594,6 +653,7 @@ export function LocationPickerScreen({ navigation, route }) {
           javaScriptEnabled={true}
           domStorageEnabled={true}
           onMessage={handleWebViewMessage}
+          onLoadEnd={() => setMapReady(true)}
           startInLoadingState={true}
           renderLoading={() => (
             <View style={styles.mapLoadingContainer}>

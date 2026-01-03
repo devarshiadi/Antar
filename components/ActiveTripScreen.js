@@ -366,6 +366,7 @@ function getStyles(colors) {
 const ActiveTripScreen = ({ navigation, route }) => {
   const { colors, statusBarStyle, isDark } = useAppTheme();
   const webViewRef = useRef(null);
+  const unsubscribeTrackingRef = useRef(null);
   const [tripStatus, setTripStatus] = useState('starting');
   const [currentLocation, setCurrentLocation] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
@@ -396,7 +397,10 @@ const ActiveTripScreen = ({ navigation, route }) => {
     initLocation();
 
     return () => {
-      locationService.stopTracking();
+      if (unsubscribeTrackingRef.current) {
+        unsubscribeTrackingRef.current();
+        unsubscribeTrackingRef.current = null;
+      }
     };
   }, []);
 
@@ -406,7 +410,7 @@ const ActiveTripScreen = ({ navigation, route }) => {
       setCurrentLocation(location);
 
       // Start live tracking
-      locationService.startTracking((newLocation) => {
+      const unsubscribe = await locationService.startTracking((newLocation) => {
         setCurrentLocation(newLocation);
         
         // Update map
@@ -416,6 +420,7 @@ const ActiveTripScreen = ({ navigation, route }) => {
           `);
         }
       }, true);
+      unsubscribeTrackingRef.current = typeof unsubscribe === 'function' ? unsubscribe : null;
     } catch (error) {
       console.error('Location error:', error);
     }

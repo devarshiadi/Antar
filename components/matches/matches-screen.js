@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useEffect, useState } from 'react';
-=======
 import React, { useEffect, useMemo, useState } from 'react';
->>>>>>> aditya mule delay zala ahe sagla
 import {
   View,
   Text,
@@ -15,11 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Clock, MessageCircle } from 'lucide-react-native';
-<<<<<<< HEAD
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
-=======
 import { TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
->>>>>>> aditya mule delay zala ahe sagla
 import {
   getStoredRides,
   updateRide,
@@ -30,16 +22,16 @@ import {
 } from '../../helpers/rides-storage';
 import { addNotification, getNotificationsForUser } from '../../helpers/notifications-storage';
 import { useAppTheme } from '../../helpers/use-app-theme';
+import { useSession } from '../../helpers/session-context';
 
 export function MatchesScreenNew({ navigation, route }) {
-  const { city, viewerRole = 'offerer', tripType, source, destination, currentUser } = route.params || {};
+  const { user: sessionUser } = useSession();
+  const { city, viewerRole = 'offerer', tripType, source, destination, currentUser: routeUser } = route.params || {};
+  const currentUser = routeUser || sessionUser || null;
   const { colors, statusBarStyle } = useAppTheme();
-<<<<<<< HEAD
-=======
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const isSeekerView = viewerRole === 'seeker';
   
   const initialData = [
@@ -283,11 +275,7 @@ export function MatchesScreenNew({ navigation, route }) {
 
         {isPending && (
           <View style={styles.pendingMessage}>
-<<<<<<< HEAD
-            <Clock size={14} color={COLORS.text.tertiary} />
-=======
             <Clock size={14} color={colors.text.tertiary} />
->>>>>>> aditya mule delay zala ahe sagla
             <Text style={styles.pendingText}>
               {isSeekerView ? 'Waiting for driver to respond' : 'Traveler requested to join'}
             </Text>
@@ -312,11 +300,7 @@ export function MatchesScreenNew({ navigation, route }) {
             accessibilityLabel={`Open chat with ${rider.name}`}
             activeOpacity={0.9}
           >
-<<<<<<< HEAD
-            <MessageCircle size={16} color={COLORS.bg.primary} />
-=======
             <MessageCircle size={16} color={colors.button.primaryText} />
->>>>>>> aditya mule delay zala ahe sagla
             <Text style={styles.chatButtonText}>
               {isSeekerView ? 'Chat with driver' : 'Coordinate'}
             </Text>
@@ -341,11 +325,7 @@ export function MatchesScreenNew({ navigation, route }) {
   }
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
-=======
     <SafeAreaView style={styles.container} edges={['top']}>
->>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
 
       <View style={styles.header}>
@@ -364,13 +344,8 @@ export function MatchesScreenNew({ navigation, route }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-<<<<<<< HEAD
-            tintColor={COLORS.text.secondary}
-            colors={[COLORS.text.primary]}
-=======
             tintColor={colors.text.secondary}
             colors={[colors.text.primary]}
->>>>>>> aditya mule delay zala ahe sagla
           />
         }
       >
@@ -405,323 +380,220 @@ export function MatchesScreenNew({ navigation, route }) {
   );
 }
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.bg.primary,
-=======
 function getStyles(colors) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-<<<<<<< HEAD
-    borderBottomColor: COLORS.border.subtle,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: COLORS.text.primary,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.secondary,
-=======
-    borderBottomColor: colors.border.subtle,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: colors.text.primary,
-  },
-  headerSubtitle: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginTop: SPACING.xs,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: SPACING.md,
-  },
-  riderCard: {
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: RADIUS.sm,
-  },
-  riderCardSelected: {
-    borderWidth: 2,
-<<<<<<< HEAD
-    borderColor: COLORS.text.primary,
-    backgroundColor: COLORS.bg.elevated,
-=======
-    borderColor: colors.text.primary,
-    backgroundColor: colors.bg.elevated,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  riderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  riderName: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-  },
-  riderRating: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.secondary,
-  },
-  riderRoute: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
-  },
-  riderRating: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.secondary,
-  },
-  riderRoute: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.xs,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: SPACING.sm,
-  },
-  detailsLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-  },
-  riderDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  riderDetail: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-  },
-  riderDetailDot: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.tertiary,
-    marginHorizontal: SPACING.xs,
-  },
-  statusPending: {
-    color: COLORS.text.tertiary,
-=======
-    color: colors.text.secondary,
-  },
-  riderDetailDot: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.tertiary,
-    marginHorizontal: SPACING.xs,
-  },
-  statusPending: {
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  statusAccepted: {
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  priceText: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-    marginLeft: SPACING.sm,
-  },
-  pendingMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-<<<<<<< HEAD
-    borderTopColor: COLORS.border.subtle,
-  },
-  pendingText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text.tertiary,
-=======
-    borderTopColor: colors.border.subtle,
-  },
-  pendingText: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.tertiary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  cancelPending: {
-    marginLeft: 'auto',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: RADIUS.sm,
-  },
-  cancelPendingText: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '600',
-  },
-  chatButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    marginTop: SPACING.sm,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-<<<<<<< HEAD
-    backgroundColor: COLORS.text.primary,
-  },
-  chatButtonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.bg.primary,
-=======
-    backgroundColor: colors.button.primaryBg,
-  },
-  chatButtonText: {
-    ...TYPOGRAPHY.body,
-    color: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  bottomActions: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    paddingTop: SPACING.sm,
-    gap: SPACING.sm,
-    borderTopWidth: 1,
-<<<<<<< HEAD
-    borderTopColor: COLORS.border.subtle,
-    backgroundColor: COLORS.bg.primary,
-  },
-  requestButton: {
-    flex: 1,
-    backgroundColor: COLORS.button.primaryBg,
-=======
-    borderTopColor: colors.border.subtle,
-    backgroundColor: colors.bg.primary,
-  },
-  requestButton: {
-    flex: 1,
-    backgroundColor: colors.button.primaryBg,
->>>>>>> aditya mule delay zala ahe sagla
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.sm,
-    alignItems: 'center',
-  },
-  requestButtonText: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '700',
-<<<<<<< HEAD
-    color: COLORS.button.primaryText,
-=======
-    color: colors.button.primaryText,
->>>>>>> aditya mule delay zala ahe sagla
-    letterSpacing: 0.5,
-  },
-  cancelButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    borderWidth: 1,
-<<<<<<< HEAD
-    borderColor: COLORS.border.default,
-=======
-    borderColor: colors.border.default,
->>>>>>> aditya mule delay zala ahe sagla
-    borderRadius: RADIUS.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    ...TYPOGRAPHY.body,
-<<<<<<< HEAD
-    color: COLORS.text.secondary,
-=======
-    color: colors.text.secondary,
->>>>>>> aditya mule delay zala ahe sagla
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl,
-  },
-  emptyTitle: {
-    ...TYPOGRAPHY.title,
-<<<<<<< HEAD
-    color: COLORS.text.primary,
-=======
-    color: colors.text.primary,
->>>>>>> aditya mule delay zala ahe sagla
-    marginBottom: SPACING.xs,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.caption,
-<<<<<<< HEAD
-    color: COLORS.text.tertiary,
-  },
-});
-=======
-    color: colors.text.tertiary,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    header: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+    },
+    headerSubtitle: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+      marginTop: SPACING.xs,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: SPACING.md,
+      paddingBottom: SPACING.xl,
+    },
+    riderCard: {
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+      backgroundColor: colors.bg.card,
+    },
+    riderCardSelected: {
+      borderWidth: 2,
+      borderColor: colors.text.primary,
+      backgroundColor: colors.bg.elevated,
+    },
+    riderHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.xs,
+    },
+    riderName: {
+      ...TYPOGRAPHY.body,
+      fontWeight: '600',
+      color: colors.text.primary,
+      flexShrink: 1,
+    },
+    riderRating: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.secondary,
+      marginLeft: SPACING.sm,
+    },
+    riderRoute: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: SPACING.sm,
+    },
+    detailsLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 1,
+      flexWrap: 'wrap',
+    },
+    riderDetail: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+    },
+    riderDetailDot: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+      marginHorizontal: SPACING.xs,
+    },
+    statusPending: {
+      color: colors.text.tertiary,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
+    statusAccepted: {
+      color: colors.text.primary,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
+    priceText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.primary,
+      fontWeight: '600',
+      marginLeft: SPACING.sm,
+    },
+    pendingMessage: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+      marginTop: SPACING.sm,
+      paddingTop: SPACING.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.subtle,
+    },
+    pendingText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+      flexShrink: 1,
+    },
+    pendingActions: {
+      marginLeft: 'auto',
+      flexDirection: 'row',
+      gap: SPACING.sm,
+    },
+    acceptPending: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 6,
+      backgroundColor: colors.button.primaryBg,
+      borderRadius: RADIUS.sm,
+    },
+    acceptPendingText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.button.primaryText,
+      fontWeight: '700',
+    },
+    cancelPending: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+    },
+    cancelPendingText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.secondary,
+      fontWeight: '600',
+    },
+    chatButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+      marginTop: SPACING.sm,
+      paddingVertical: SPACING.sm,
+      borderRadius: RADIUS.full,
+      backgroundColor: colors.button.primaryBg,
+    },
+    chatButtonText: {
+      ...TYPOGRAPHY.body,
+      color: colors.button.primaryText,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    bottomActions: {
+      flexDirection: 'row',
+      paddingHorizontal: SPACING.md,
+      paddingBottom: SPACING.md,
+      paddingTop: SPACING.sm,
+      gap: SPACING.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.subtle,
+      backgroundColor: colors.bg.primary,
+    },
+    requestButton: {
+      flex: 1,
+      backgroundColor: colors.button.primaryBg,
+      paddingVertical: SPACING.md,
+      borderRadius: RADIUS.sm,
+      alignItems: 'center',
+    },
+    requestButtonText: {
+      ...TYPOGRAPHY.body,
+      fontWeight: '700',
+      color: colors.button.primaryText,
+      letterSpacing: 0.5,
+    },
+    cancelButton: {
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelButtonText: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.secondary,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: SPACING.xl,
+    },
+    emptyTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+    },
   });
 }
->>>>>>> aditya mule delay zala ahe sagla
 
 export default MatchesScreenNew;

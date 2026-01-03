@@ -49,6 +49,9 @@ export const authService = {
       if (response.data.access_token) {
         await AsyncStorage.setItem('access_token', response.data.access_token);
       }
+      if (response.data.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+      }
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -63,6 +66,9 @@ export const authService = {
       });
       if (response.data.access_token) {
         await AsyncStorage.setItem('access_token', response.data.access_token);
+      }
+      if (response.data.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
       }
       return response.data;
     } catch (error) {

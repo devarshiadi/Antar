@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useState, useEffect, useRef } from 'react';
-=======
 import React, { useMemo, useState, useEffect, useRef } from 'react';
->>>>>>> aditya mule delay zala ahe sagla
 
 import {
   View,
@@ -20,12 +16,10 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../services/api';
-<<<<<<< HEAD
-import { COLORS } from '../constants/theme';
-=======
->>>>>>> aditya mule delay zala ahe sagla
 import { useAppTheme } from '../helpers/use-app-theme';
+import { useSession } from '../helpers/session-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,10 +53,6 @@ const BlinkingCursor = ({ cursorStyle }) => {
   return <Animated.View style={[cursorStyle, { opacity }]} />;
 };
 
-<<<<<<< HEAD
-const VerificationScreen = ({ navigation, route }) => {
-  const { colors, statusBarStyle } = useAppTheme();
-=======
 function getStyles(colors) {
   return StyleSheet.create({
     container: {
@@ -242,10 +232,10 @@ function getStyles(colors) {
 
 const VerificationScreen = ({ navigation, route }) => {
   const { colors, statusBarStyle } = useAppTheme();
+  const { setSession } = useSession();
   const styles = useMemo(function () {
     return getStyles(colors);
   }, [colors]);
->>>>>>> aditya mule delay zala ahe sagla
   const [code, setCode] = useState('');
 
   const [timer, setTimer] = useState(INITIAL_TIMER);
@@ -299,6 +289,10 @@ const VerificationScreen = ({ navigation, route }) => {
 
     try {
       const result = await authService.verifyOTP(phoneNumber, enteredCode);
+      const tokenFromResult = result && typeof result.access_token === 'string' ? result.access_token : null;
+      const storedToken = tokenFromResult || (await AsyncStorage.getItem('access_token'));
+      const storedUser = result && result.user ? result.user : null;
+      await setSession({ token: storedToken, user: storedUser });
       setVerificationStatus('success');
       clearInterval(intervalRef.current);
       triggerSuccessAnimation();
@@ -306,16 +300,18 @@ const VerificationScreen = ({ navigation, route }) => {
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [
-            {
-              name: 'Home',
-              params: result && result.user ? { user: result.user } : undefined,
-            },
-          ],
+          routes: [{ name: 'Home' }],
         });
       }, 1000);
     } catch (error) {
       if (enteredCode === CORRECT_CODE) {
+        const storedToken = await AsyncStorage.getItem('access_token');
+        const storedUserJson = await AsyncStorage.getItem('user');
+        const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
+        await setSession({
+          token: storedToken || 'dev_token',
+          user: storedUser || { id: `dev-${phoneNumber}`, name: 'Traveler' },
+        });
         setVerificationStatus('success');
         clearInterval(intervalRef.current);
         triggerSuccessAnimation();
@@ -487,11 +483,7 @@ const VerificationScreen = ({ navigation, route }) => {
   };
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
-=======
     <SafeAreaView style={styles.container}>
->>>>>>> aditya mule delay zala ahe sagla
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <Pressable 
         style={styles.content} 
@@ -617,182 +609,4 @@ const VerificationScreen = ({ navigation, route }) => {
   );
 };
 
-<<<<<<< HEAD
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.bg.primary, 
-  },
-  content: { 
-    flex: 1, 
-    paddingHorizontal: 24, 
-    paddingTop: height * 0.08, 
-    paddingBottom: height * 0.05 
-  },
-  header: {
-    marginBottom: height * 0.04,
-  },
-  headerTitle: { 
-    fontSize: Math.min(width * 0.1, 40), 
-    fontWeight: 'bold', 
-    color: COLORS.text.primary, 
-    marginBottom: 8, 
-  },
-  headerSubtitle: { 
-    fontSize: Math.min(width * 0.065, 26), 
-    fontWeight: '600', 
-    color: COLORS.text.primary, 
-    marginBottom: 16, 
-  },
-  instructionText: { 
-    fontSize: Math.min(width * 0.04, 16), 
-    color: COLORS.text.secondary, 
-    lineHeight: 24, 
-  },
-  phoneNumber: {
-    color: COLORS.accent.primary,
-    fontWeight: '600',
-  },
-  debugText: {
-    fontSize: 12,
-    color: COLORS.state.warning,
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  hiddenInput: { 
-    position: 'absolute', 
-    width: 0, 
-    height: 0, 
-    opacity: 0 
-  },
-  otpContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginTop: height * 0.02,
-    paddingHorizontal: 5,
-  },
-  otpBox: {
-    width: Math.min((width - 78) / CODE_LENGTH, 55),
-    height: 64,
-    backgroundColor: COLORS.bg.elevated,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border.default,
-    marginHorizontal: 2,
-  },
-  otpBoxFilled: { 
-    borderColor: COLORS.accent.primary,
-    backgroundColor: COLORS.accent.subtle,
-  },
-  otpBoxFocused: { 
-    borderColor: COLORS.border.focus,
-    backgroundColor: COLORS.bg.elevated,
-    elevation: 3,
-    shadowColor: COLORS.accent.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  otpBoxSuccess: { 
-    borderColor: COLORS.state.success, 
-    backgroundColor: 'rgba(0, 255, 255, 0.15)', 
-  },
-  otpBoxError: { 
-    borderColor: COLORS.state.error, 
-    backgroundColor: 'rgba(102, 102, 102, 0.15)', 
-  },
-  otpText: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    color: COLORS.text.primary, 
-  },
-  dot: { 
-    width: 8, 
-    height: 8, 
-    borderRadius: 4, 
-    backgroundColor: COLORS.text.tertiary, 
-  },
-  cursor: { 
-    width: 2, 
-    height: 28, 
-    backgroundColor: COLORS.accent.primary, 
-    borderRadius: 1 
-  },
-  statusContainer: { 
-    height: 40, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    marginTop: 20 
-  },
-  statusText: { 
-    fontSize: 15, 
-    fontWeight: '500', 
-    color: COLORS.text.primary, 
-  },
-  statusSuccess: {
-    color: COLORS.state.success,
-    fontSize: 16,
-  },
-  statusError: {
-    color: COLORS.state.error,
-    fontSize: 14,
-  },
-  bottomSection: {
-    marginBottom: 20,
-  },
-  timerSection: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 20 
-  },
-  progressBarContainer: { 
-    flex: 1, 
-    height: 4, 
-    backgroundColor: COLORS.bg.elevated, 
-    borderRadius: 2, 
-    marginRight: 16,
-    overflow: 'hidden',
-  },
-  progressBar: { 
-    height: '100%', 
-    backgroundColor: COLORS.accent.primary, 
-    borderRadius: 2 
-  },
-  timerText: { 
-    color: COLORS.text.secondary, 
-    fontSize: 14, 
-    fontWeight: '600',
-    minWidth: 45,
-  },
-  resendContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resendText: { 
-    color: COLORS.text.secondary, 
-    fontSize: 15,
-    marginRight: 8,
-  },
-  resendButtonContainer: {
-    padding: 4,
-  },
-  resendButton: { 
-    color: COLORS.accent.primary, 
-    fontSize: 15, 
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-  resendCountText: {
-    color: COLORS.text.tertiary,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-});
-
-=======
->>>>>>> aditya mule delay zala ahe sagla
 export default VerificationScreen;
