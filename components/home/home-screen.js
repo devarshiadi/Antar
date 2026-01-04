@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Car, User, Bell, Navigation, MessageSquare, ChevronRight } from 'lucide-react-native';
+import { MapPin, Car, User, Bell, Navigation, MessageSquare, ChevronRight, Activity } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { saveGlobalRoute, loadGlobalRoute } from '../../helpers/location-storage';
 import { getStoredRides } from '../../helpers/rides-storage';
@@ -378,12 +379,7 @@ export function HomeScreen({ navigation, route }) {
     });
   }
 
-  function handleCreateTrip() {
-    navigation.navigate('CreateTrip', {
-      tripType: 'offer',
-      currentUser,
-    });
-  }
+
 
   function handleActiveTrip() {
     navigation.navigate('ActiveTrip', {
@@ -567,7 +563,7 @@ export function HomeScreen({ navigation, route }) {
           styles={styles}
           onOfferRide={handleOfferRide}
           onFindRide={handleFindRide}
-          onCreateTrip={handleCreateTrip}
+
           onActiveTrip={handleActiveTrip}
         />
         <RecentTripsSection theme={theme} styles={styles} trips={homeRecentTrips} onViewAll={handleViewAllTrips} />
@@ -788,7 +784,7 @@ function MessagesOverlay({ theme, styles, visible, threads, currentThread, forma
   );
 }
 
-function QuickActionsSection({ theme, styles, onOfferRide, onFindRide, onCreateTrip, onActiveTrip }) {
+function QuickActionsSection({ theme, styles, onOfferRide, onFindRide, onActiveTrip }) {
   return (
     <View style={styles.quickActions}>
       <View style={styles.quickActionCardsRow}>
@@ -819,27 +815,37 @@ function QuickActionsSection({ theme, styles, onOfferRide, onFindRide, onCreateT
           <Text style={[styles.actionSubtitle, { color: theme.textSecondary }]}>Join nearby trips</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.quickActionSecondaryRow}>
-        <TouchableOpacity
-          style={[styles.quickActionSecondaryButton, { backgroundColor: theme.card, borderColor: theme.divider }]}
-          onPress={onCreateTrip}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Create a trip"
+
+
+      {/* Modern Active Trip Card */}
+      <TouchableOpacity
+        style={styles.activeTripCard}
+        onPress={onActiveTrip}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel="Open active trip details"
+      >
+        <LinearGradient
+          colors={['#4facfe', '#00f2fe']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.activeTripGradient}
         >
-          <Text style={[styles.quickActionSecondaryText, { color: theme.textPrimary }]}>Create Trip</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.quickActionSecondaryButton, { backgroundColor: theme.card, borderColor: theme.divider }]}
-          onPress={onActiveTrip}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Open active trip"
-        >
-          <Text style={[styles.quickActionSecondaryText, { color: theme.textPrimary }]}>Active Trip</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <View style={styles.activeTripContent}>
+            <View style={styles.activeTripIconContainer}>
+              <Activity size={24} color="#fff" />
+            </View>
+            <View style={styles.activeTripTextContainer}>
+              <Text style={styles.activeTripTitle}>Active Trip</Text>
+              <Text style={styles.activeTripSubtitle}>Track your current ride</Text>
+            </View>
+            <ChevronRight size={20} color="#fff" />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+
+
+    </View >
   );
 }
 

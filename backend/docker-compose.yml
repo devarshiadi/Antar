@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  auth:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.auth
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - AUTH_PORT=8001
+      - DATABASE_PATH=/app/data
+      - JWT_SECRET=antar-dev-secret-key
+      - ENVIRONMENT=development
+    volumes:
+      - auth-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  matchmaking:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.matchmaking
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - MATCHMAKING_PORT=8002
+      - DATABASE_PATH=/app/data
+      - JWT_SECRET=antar-dev-secret-key
+      - AUTH_SERVICE_URL=http://auth:8001
+      - ENVIRONMENT=development
+    volumes:
+      - matchmaking-data:/app/data
+    depends_on:
+      - auth
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  chat:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.chat
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - CHAT_PORT=8003
+      - DATABASE_PATH=/app/data
+      - JWT_SECRET=antar-dev-secret-key
+      - ENVIRONMENT=development
+    volumes:
+      - chat-data:/app/data
+    depends_on:
+      - auth
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  location:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.location
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - LOCATION_PORT=8004
+      - JWT_SECRET=antar-dev-secret-key
+      - NOMINATIM_URL=https://nominatim.openstreetmap.org
+      - OSRM_URL=https://router.project-osrm.org
+      - ENVIRONMENT=development
+    depends_on:
+      - auth
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gateway:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - JWT_SECRET=antar-dev-secret-key
+      - AUTH_SERVICE_URL=http://auth:8001
+      - MATCHMAKING_SERVICE_URL=http://matchmaking:8002
+      - CHAT_SERVICE_URL=http://chat:8003
+      - LOCATION_SERVICE_URL=http://location:8004
+      - ENVIRONMENT=development
+    depends_on:
+      - auth
+      - matchmaking
+      - chat
+      - location
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  auth-data:
+  matchmaking-data:
+  chat-data:

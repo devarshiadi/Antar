@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CheckCircle, X, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, X, MessageCircle, BellOff } from 'lucide-react-native';
 import { TYPOGRAPHY, SPACING, RADIUS } from '../constants/theme';
 import {
   getNotificationsForUser,
@@ -209,13 +210,18 @@ function NotificationsScreenNew({ navigation, route }) {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         {loading ? (
-          <Text style={styles.emptyText}>Loading...</Text>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 }}>
+            <ActivityIndicator size="large" color={colors.accent.primary} />
+          </View>
         ) : notifications.length > 0 ? (
           notifications.map((notification) => <NotificationCard key={notification.id} notification={notification} />)
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No notifications</Text>
-            <Text style={styles.emptySubtext}>You're all caught up</Text>
+            <View style={{ marginBottom: 16, width: 80, height: 80, borderRadius: 40, backgroundColor: colors.bg.card, justifyContent: 'center', alignItems: 'center' }}>
+              <BellOff size={40} color={colors.text.tertiary} />
+            </View>
+            <Text style={styles.emptyText}>No notifications yet</Text>
+            <Text style={styles.emptySubtext}>We'll let you know when something important happens.</Text>
           </View>
         )}
       </ScrollView>
@@ -225,156 +231,156 @@ function NotificationsScreenNew({ navigation, route }) {
 
 function getStyles(colors) {
   return StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.title,
-    color: colors.text.primary,
-  },
-  unreadBadge: {
-    backgroundColor: colors.text.primary,
-    paddingHorizontal: SPACING.xs + 2,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-    minWidth: 20,
-    alignItems: 'center',
-  },
-  unreadBadgeText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.bg.primary,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: SPACING.md,
-  },
-  notificationCard: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    borderRadius: RADIUS.sm,
-  },
-  unreadCard: {
-    borderColor: colors.border.strong,
-    backgroundColor: colors.bg.elevated,
-  },
-  notificationContent: {
-    flex: 1,
-  },
-  notificationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
-  },
-  notificationTitle: {
-    ...TYPOGRAPHY.body,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.text.primary,
-  },
-  notificationMessage: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.secondary,
-    marginBottom: SPACING.xs,
-  },
-  notificationTime: {
-    ...TYPOGRAPHY.caption,
-    color: colors.text.tertiary,
-  },
-  notificationActions: {
-    flexDirection: 'row',
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
-  },
-  acceptButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    borderWidth: 1,
-    borderColor: colors.button.primaryBg,
-    borderRadius: RADIUS.sm,
-    backgroundColor: colors.button.primaryBg,
-  },
-  acceptText: {
-    ...TYPOGRAPHY.caption,
-    color: colors.button.primaryText,
-    fontWeight: '600',
-  },
-  rejectButton: {
-    marginLeft: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    borderWidth: 1,
-    borderColor: colors.button.secondaryBorder,
-    borderRadius: RADIUS.sm,
-  },
-  rejectText: {
-    ...TYPOGRAPHY.caption,
-    color: colors.button.secondaryText,
-    fontWeight: '600',
-  },
-  dismissButton: {
-    padding: SPACING.xs,
-    marginLeft: SPACING.sm,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingTop: SPACING.xxl * 2,
-  },
-  emptyText: {
-    ...TYPOGRAPHY.title,
-    color: colors.text.primary,
-    marginBottom: SPACING.xs,
-  },
-  emptySubtext: {
-    ...TYPOGRAPHY.body,
-    color: colors.text.tertiary,
-  },
-  chatButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADIUS.full,
-    backgroundColor: colors.button.primaryBg,
-  },
-  chatButtonText: {
-    ...TYPOGRAPHY.caption,
-    color: colors.button.primaryText,
-    fontWeight: '600',
-  },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg.primary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.subtle,
+    },
+    headerCenter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+    },
+    headerTitle: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+    },
+    unreadBadge: {
+      backgroundColor: colors.text.primary,
+      paddingHorizontal: SPACING.xs + 2,
+      paddingVertical: 2,
+      borderRadius: RADIUS.sm,
+      minWidth: 20,
+      alignItems: 'center',
+    },
+    unreadBadgeText: {
+      ...TYPOGRAPHY.caption,
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.bg.primary,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      padding: SPACING.md,
+    },
+    notificationCard: {
+      flexDirection: 'row',
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      borderRadius: RADIUS.sm,
+    },
+    unreadCard: {
+      borderColor: colors.border.strong,
+      backgroundColor: colors.bg.elevated,
+    },
+    notificationContent: {
+      flex: 1,
+    },
+    notificationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+      marginBottom: SPACING.xs,
+    },
+    notificationTitle: {
+      ...TYPOGRAPHY.body,
+      fontWeight: '600',
+      color: colors.text.primary,
+    },
+    unreadDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.text.primary,
+    },
+    notificationMessage: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.secondary,
+      marginBottom: SPACING.xs,
+    },
+    notificationTime: {
+      ...TYPOGRAPHY.caption,
+      color: colors.text.tertiary,
+    },
+    notificationActions: {
+      flexDirection: 'row',
+      marginTop: SPACING.sm,
+      paddingTop: SPACING.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.subtle,
+    },
+    acceptButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+      borderWidth: 1,
+      borderColor: colors.button.primaryBg,
+      borderRadius: RADIUS.sm,
+      backgroundColor: colors.button.primaryBg,
+    },
+    acceptText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.button.primaryText,
+      fontWeight: '600',
+    },
+    rejectButton: {
+      marginLeft: SPACING.sm,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+      borderWidth: 1,
+      borderColor: colors.button.secondaryBorder,
+      borderRadius: RADIUS.sm,
+    },
+    rejectText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.button.secondaryText,
+      fontWeight: '600',
+    },
+    dismissButton: {
+      padding: SPACING.xs,
+      marginLeft: SPACING.sm,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingTop: SPACING.xxl * 2,
+    },
+    emptyText: {
+      ...TYPOGRAPHY.title,
+      color: colors.text.primary,
+      marginBottom: SPACING.xs,
+    },
+    emptySubtext: {
+      ...TYPOGRAPHY.body,
+      color: colors.text.tertiary,
+    },
+    chatButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.md,
+      borderRadius: RADIUS.full,
+      backgroundColor: colors.button.primaryBg,
+    },
+    chatButtonText: {
+      ...TYPOGRAPHY.caption,
+      color: colors.button.primaryText,
+      fontWeight: '600',
+    },
   });
 }
 

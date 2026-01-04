@@ -34,15 +34,15 @@ const BlinkingCursor = ({ cursorStyle }) => {
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { 
-          toValue: 0, 
-          duration: 500, 
-          useNativeDriver: true 
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: Platform.OS !== 'web'
         }),
-        Animated.timing(opacity, { 
-          toValue: 1, 
-          duration: 500, 
-          useNativeDriver: true 
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: Platform.OS !== 'web'
         }),
       ])
     );
@@ -125,11 +125,22 @@ function getStyles(colors) {
     otpBoxFocused: {
       borderColor: colors.border.focus,
       backgroundColor: colors.bg.elevated,
-      elevation: 3,
-      shadowColor: colors.accent.primary,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+      backgroundColor: colors.bg.elevated,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.accent.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 3,
+          shadowColor: colors.accent.primary,
+        },
+        web: {
+          boxShadow: `0px 2px 4px ${colors.accent.primary}33`, // 33 = 20% opacity
+        }
+      }),
     },
     otpBoxSuccess: {
       borderColor: colors.state.success,
@@ -243,7 +254,7 @@ const VerificationScreen = ({ navigation, route }) => {
   const [verificationStatus, setVerificationStatus] = useState('idle');
   const [resendCount, setResendCount] = useState(0);
   const [isResending, setIsResending] = useState(false);
-  
+
   const inputRef = useRef(null);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const intervalRef = useRef(null);
@@ -273,9 +284,9 @@ const VerificationScreen = ({ navigation, route }) => {
     const focusTimeout = setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
-    
+
     startTimer();
-    
+
     return () => {
       clearTimeout(focusTimeout);
       clearInterval(intervalRef.current);
@@ -346,23 +357,23 @@ const VerificationScreen = ({ navigation, route }) => {
   const handleResend = async () => {
     if (timer === 0 && !isResending) {
       setIsResending(true);
-      
+
       // Simulate API call for resending code
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setResendCount(prev => prev + 1);
       Alert.alert(
-        "Code Resent", 
+        "Code Resent",
         `A new verification code has been sent to your phone.\n(Attempt ${resendCount + 1})`,
         [{ text: "OK" }]
       );
-      
+
       // Reset state
       setCode('');
       setVerificationStatus('idle');
       setIsResending(false);
       startTimer();
-      
+
       // Refocus input
       setTimeout(() => {
         inputRef.current?.focus();
@@ -374,7 +385,7 @@ const VerificationScreen = ({ navigation, route }) => {
   const handleTextChange = (text) => {
     // Only allow numeric input
     const numericText = text.replace(/[^0-9]/g, '');
-    
+
     // Don't allow input during verification or after success
     if (verificationStatus !== 'verifying' && verificationStatus !== 'success') {
       setCode(numericText.slice(0, CODE_LENGTH));
@@ -387,7 +398,7 @@ const VerificationScreen = ({ navigation, route }) => {
       setCode(code.slice(0, -1));
     }
   };
-  
+
   // Shake animation for error
   const triggerShake = () => {
     shakeAnimation.setValue(0);
@@ -396,25 +407,25 @@ const VerificationScreen = ({ navigation, route }) => {
         toValue: 1,
         duration: 100,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(shakeAnimation, {
         toValue: -1,
         duration: 100,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(shakeAnimation, {
         toValue: 1,
         duration: 100,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(shakeAnimation, {
         toValue: 0,
         duration: 100,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();
   };
@@ -425,7 +436,8 @@ const VerificationScreen = ({ navigation, route }) => {
       toValue: 1,
       friction: 4,
       tension: 40,
-      useNativeDriver: true,
+      tension: 40,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   };
 
@@ -444,7 +456,7 @@ const VerificationScreen = ({ navigation, route }) => {
 
   // Get status message
   const getStatusMessage = () => {
-    switch(verificationStatus) {
+    switch (verificationStatus) {
       case 'verifying':
         return <Text style={styles.statusText}>Verifying code...</Text>;
       case 'success':
@@ -485,8 +497,8 @@ const VerificationScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
-      <Pressable 
-        style={styles.content} 
+      <Pressable
+        style={styles.content}
         onPress={handleBoxPress}
       >
         <View style={styles.header}>
@@ -519,14 +531,14 @@ const VerificationScreen = ({ navigation, route }) => {
         />
 
         {/* Visual OTP boxes */}
-        <Animated.View 
+        <Animated.View
           style={[
-            styles.otpContainer, 
-            { 
+            styles.otpContainer,
+            {
               transform: [
                 { translateX: shakeInterpolation },
                 { scale: verificationStatus === 'success' ? successScale : 1 }
-              ] 
+              ]
             }
           ]}
         >
@@ -567,36 +579,36 @@ const VerificationScreen = ({ navigation, route }) => {
           <View style={styles.bottomSection}>
             <View style={styles.timerSection}>
               <View style={styles.progressBarContainer}>
-                <Animated.View 
+                <Animated.View
                   style={[
-                    styles.progressBar, 
+                    styles.progressBar,
                     { width: `${progress * 100}%` }
-                  ]} 
+                  ]}
                 />
               </View>
               <Text style={styles.timerText}>
                 {timer > 0 ? `0:${String(timer).padStart(2, '0')}` : 'Expired'}
               </Text>
             </View>
-            
+
             <View style={styles.resendContainer}>
               <Text style={styles.resendText}>
                 {timer > 0 ? `Wait ${timer}s to resend` : "Didn't receive code?"}
               </Text>
-              <TouchableOpacity 
-                onPress={handleResend} 
+              <TouchableOpacity
+                onPress={handleResend}
                 disabled={timer > 0 || isResending}
                 style={styles.resendButtonContainer}
               >
                 <Text style={[
-                  styles.resendButton, 
+                  styles.resendButton,
                   { opacity: timer > 0 || isResending ? 0.4 : 1 }
                 ]}>
                   {isResending ? 'Sending...' : 'Resend Code'}
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             {resendCount > 0 && (
               <Text style={styles.resendCountText}>
                 Resend attempts: {resendCount}

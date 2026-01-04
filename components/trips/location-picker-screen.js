@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -274,10 +275,21 @@ function getStyles(colors, isDark) {
       width: 14,
       height: 14,
       borderRadius: 7,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+      borderRadius: 7,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+        web: {
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.3)',
+        }
+      }),
     },
     locationInfo: {
       marginLeft: 12,
@@ -314,11 +326,20 @@ function getStyles(colors, isDark) {
       position: 'absolute',
       bottom: 200,
       right: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 8,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 8,
+        },
+        web: {
+          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
+        }
+      }),
     },
     secondaryButton: {
       flex: 1,
@@ -349,11 +370,46 @@ function getStyles(colors, isDark) {
       paddingHorizontal: 24,
       minHeight: 56,
       marginTop: 8,
-      shadowColor: colors.button.primaryBg,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 8,
+      minHeight: 56,
+      marginTop: 8,
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.button.primaryBg,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 8,
+          shadowColor: colors.button.primaryBg,
+        },
+        web: {
+          boxShadow: `0px 4px 8px ${colors.button.primaryBg}33`,
+        }
+      }),
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    errorText: {
+      color: colors.text.secondary,
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 16,
+    },
+    retryButton: {
+      backgroundColor: colors.button.primaryBg,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: colors.button.primaryText,
+      fontSize: 16,
+      fontWeight: '600',
     },
     confirmButtonDisabled: {
       backgroundColor: colors.bg.elevated,
@@ -383,6 +439,7 @@ export function LocationPickerScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [pickupAddress, setPickupAddress] = useState('');
   const [destAddress, setDestAddress] = useState('');
+  const [resolvingAddress, setResolvingAddress] = useState(null);
   const [mapReady, setMapReady] = useState(false);
 
   const {
@@ -414,7 +471,7 @@ export function LocationPickerScreen({ navigation, route }) {
       .then((unsubscribe) => {
         unsubscribeTrackingRef.current = typeof unsubscribe === 'function' ? unsubscribe : null;
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       if (unsubscribeTrackingRef.current) {
         unsubscribeTrackingRef.current();
@@ -465,7 +522,7 @@ export function LocationPickerScreen({ navigation, route }) {
   async function initializeLocation() {
     try {
       const permissions = await locationService.hasPermissions();
-      
+
       if (!permissions.foreground) {
         const granted = await locationService.requestPermissions();
         if (!granted.foreground) {
@@ -488,27 +545,39 @@ export function LocationPickerScreen({ navigation, route }) {
   function handleWebViewMessage(event) {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      
+
       if (data.type === 'pickup_selected') {
         const loc = { latitude: data.latitude, longitude: data.longitude };
         setPickupLocation(loc);
-        locationService.getAddressFromCoords(loc.latitude, loc.longitude).then((addr) => {
-          setPickupAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
-        });
+        setResolvingAddress('pickup');
+        locationService.getAddressFromCoords(loc.latitude, loc.longitude)
+          .then((addr) => {
+            setPickupAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
+          })
+          .finally(() => {
+            setResolvingAddress(null);
+          });
       } else if (data.type === 'destination_selected') {
         const loc = { latitude: data.latitude, longitude: data.longitude };
         setDestLocation(loc);
-        locationService.getAddressFromCoords(loc.latitude, loc.longitude).then((addr) => {
-          setDestAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
-        });
+        setResolvingAddress('dest');
+        locationService.getAddressFromCoords(loc.latitude, loc.longitude)
+          .then((addr) => {
+            setDestAddress(addr?.formatted || `${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
+          })
+          .finally(() => {
+            setResolvingAddress(null);
+          });
       } else if (data.type === 'reset') {
         setPickupLocation(null);
         setDestLocation(null);
         setPickupAddress('');
         setDestAddress('');
+        setResolvingAddress(null);
       }
     } catch (error) {
       console.error('WebView message error:', error);
+      setResolvingAddress(null);
     }
   }
 
@@ -516,7 +585,7 @@ export function LocationPickerScreen({ navigation, route }) {
     if (locationType) {
       const selectedLocation = requiresPickupOnly ? pickupLocation : destLocation;
       const selectedAddress = requiresPickupOnly ? pickupAddress : destAddress;
-      
+
       if (!selectedLocation) {
         Alert.alert('Error', `Please select ${locationType === 'source' ? 'pickup' : 'destination'} location`);
         return;
@@ -559,7 +628,7 @@ export function LocationPickerScreen({ navigation, route }) {
       pickupLocation.latitude,
       pickupLocation.longitude
     );
-    
+
     const destAddressObj = await locationService.getAddressFromCoords(
       destLocation.latitude,
       destLocation.longitude
@@ -629,6 +698,36 @@ export function LocationPickerScreen({ navigation, route }) {
     );
   }
 
+  if (!currentLocation) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]}>
+        <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Location Access Required</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>We couldn't get your location. Please ensure location services are enabled and permissions are granted.</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setLoading(true);
+              initializeLocation();
+            }}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg.primary }]} edges={['top']}>
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
@@ -657,7 +756,7 @@ export function LocationPickerScreen({ navigation, route }) {
           startInLoadingState={true}
           renderLoading={() => (
             <View style={styles.mapLoadingContainer}>
-              <ActivityIndicator size="large" color="#4A90E2" />
+              <ActivityIndicator size="large" color={colors.accent.primary} />
             </View>
           )}
         />
@@ -668,12 +767,12 @@ export function LocationPickerScreen({ navigation, route }) {
           {locationType === 'source'
             ? '📍 Tap to set pickup location'
             : locationType === 'destination'
-            ? '🎯 Tap to set destination'
-            : !pickupLocation
-            ? '📍 Tap to set pickup location'
-            : !destLocation
-            ? '🎯 Tap to set destination'
-            : '✅ Both locations set. Tap again to reset'}
+              ? '🎯 Tap to set destination'
+              : !pickupLocation
+                ? '📍 Tap to set pickup location'
+                : !destLocation
+                  ? '🎯 Tap to set destination'
+                  : '✅ Both locations set. Tap again to reset'}
         </Text>
       </View>
 
@@ -692,10 +791,15 @@ export function LocationPickerScreen({ navigation, route }) {
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Pickup</Text>
               <Text style={styles.locationCoords} numberOfLines={2}>
-                {pickupAddress ||
-                  `${pickupLocation.latitude.toFixed(6)}, ${pickupLocation.longitude.toFixed(6)}`}
+                {resolvingAddress === 'pickup' ? (
+                  <Text style={{ fontStyle: 'italic', color: colors.text.tertiary }}>Resolving address...</Text>
+                ) : (
+                  pickupAddress ||
+                  `${pickupLocation.latitude.toFixed(6)}, ${pickupLocation.longitude.toFixed(6)}`
+                )}
               </Text>
             </View>
+            {resolvingAddress === 'pickup' && <ActivityIndicator size="small" color={colors.text.tertiary} />}
           </View>
         )}
 
@@ -705,10 +809,15 @@ export function LocationPickerScreen({ navigation, route }) {
             <View style={styles.locationInfo}>
               <Text style={styles.locationLabel}>Destination</Text>
               <Text style={styles.locationCoords} numberOfLines={2}>
-                {destAddress ||
-                  `${destLocation.latitude.toFixed(6)}, ${destLocation.longitude.toFixed(6)}`}
+                {resolvingAddress === 'dest' ? (
+                  <Text style={{ fontStyle: 'italic', color: colors.text.tertiary }}>Resolving address...</Text>
+                ) : (
+                  destAddress ||
+                  `${destLocation.latitude.toFixed(6)}, ${destLocation.longitude.toFixed(6)}`
+                )}
               </Text>
             </View>
+            {resolvingAddress === 'dest' && <ActivityIndicator size="small" color={colors.text.tertiary} />}
           </View>
         )}
 
@@ -736,23 +845,28 @@ export function LocationPickerScreen({ navigation, route }) {
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            confirmDisabled && styles.confirmButtonDisabled,
+            (confirmDisabled || !!resolvingAddress) && styles.confirmButtonDisabled,
           ]}
           onPress={handleConfirmLocation}
-          disabled={confirmDisabled}
+          disabled={confirmDisabled || !!resolvingAddress}
           activeOpacity={0.9}
         >
-          <Check
-            size={24}
-            color={confirmDisabled ? colors.text.disabled : colors.button.primaryText}
-          />
+          {resolvingAddress ? (
+            <ActivityIndicator size="small" color={colors.text.disabled} />
+          ) : (
+            <Check
+              size={24}
+              color={confirmDisabled ? colors.text.disabled : colors.button.primaryText}
+            />
+          )}
+
           <Text
             style={[
               styles.confirmButtonText,
-              confirmDisabled && { color: colors.text.disabled },
+              (confirmDisabled || !!resolvingAddress) && { color: colors.text.disabled },
             ]}
           >
-            {locationType ? 'Confirm Location' : 'Confirm Locations'}
+            {resolvingAddress ? 'Resolving Address...' : locationType ? 'Confirm Location' : 'Confirm Locations'}
           </Text>
         </TouchableOpacity>
       </View>

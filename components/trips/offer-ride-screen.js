@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +47,26 @@ export function OfferRideScreen({ navigation, route }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [price, setPrice] = useState('');
+
+  // Auto-set date and time
+  function getDefaultDateTime() {
+    const now = new Date();
+    // Add 10 minutes
+    now.setMinutes(now.getMinutes() + 10);
+
+    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const time = `${hours}:${minutes}`;
+
+    return { date, time };
+  }
+
+  const { date: defaultDate, time: defaultTime } = useMemo(() => getDefaultDateTime(), []);
+  const [departureDate, setDepartureDate] = useState(defaultDate);
+  const [departureTime, setDepartureTime] = useState(defaultTime);
 
   useEffect(() => {
     loadUserData();
@@ -192,69 +212,75 @@ export function OfferRideScreen({ navigation, route }) {
       return;
     }
 
-    await saveUserData();
+    setCreating(true);
 
-    const now = new Date();
-    const departureDate = now.toISOString().split('T')[0];
-    const departureTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    let createdTrip = null;
     try {
-      createdTrip = await tripService.createTrip({
-        trip_type: 'offer',
-        origin_latitude: sourceLocation.latitude,
-        origin_longitude: sourceLocation.longitude,
-        origin_address: sourceLocation.address,
-        destination_latitude: destinationLocation.latitude,
-        destination_longitude: destinationLocation.longitude,
-        destination_address: destinationLocation.address,
-        departure_date: departureDate,
-        departure_time: departureTime,
-        seats_available: seatCount,
+      await saveUserData();
+
+      let createdTrip = null;
+      try {
+        createdTrip = await tripService.createTrip({
+          trip_type: 'offer',
+          origin_latitude: sourceLocation.latitude,
+          origin_longitude: sourceLocation.longitude,
+          origin_address: sourceLocation.address,
+          destination_latitude: destinationLocation.latitude,
+          destination_longitude: destinationLocation.longitude,
+          destination_address: destinationLocation.address,
+          departure_date: departureDate,
+          departure_time: departureTime,
+          seats_available: seatCount,
+          price: numericPrice,
+        });
+      } catch (error) {
+        // Fallback to local if API fails (or handle differently)
+        console.warn('API creation failed, falling back to local only', error);
+        createdTrip = null;
+      }
+
+      const rideId = createdTrip?.id ?? Date.now();
+      const ride = {
+        id: rideId,
+        driverId: currentUser?.id ?? `driver-${rideId}`,
+        driverPhone: phoneNumber,
+        driverName: userName || currentUser?.name || 'Driver',
+        name: userName || currentUser?.name || 'Driver',
+        rating: currentUser?.rating ?? 4.8,
+        from: sourceLocation.address || 'Pickup',
+        to: destinationLocation.address || 'Drop',
+        time: departureTime,
         price: numericPrice,
+        seats: seatCount,
+        vehicleType,
+        vehicleNumber,
+        sourceLocation,
+        destinationLocation,
+        status: 'available',
+        isStored: true,
+      };
+
+      await addRide(ride);
+
+      navigation.navigate('Matches', {
+        tripType: 'offer',
+        vehicleType,
+        seatCount,
+        price: numericPrice,
+        tripId: createdTrip?.id,
+        source: sourceLocation,
+        destination: destinationLocation,
+        currentUser,
+        userInfo: {
+          name: userName,
+          phone: phoneNumber,
+          vehicleNumber,
+        },
       });
     } catch (error) {
-      createdTrip = null;
+      Alert.alert('Error', 'Failed to offer ride. Please try again.');
+    } finally {
+      setCreating(false);
     }
-
-    const rideId = createdTrip?.id ?? Date.now();
-    const ride = {
-      id: rideId,
-      driverId: currentUser?.id ?? `driver-${rideId}`,
-      driverPhone: phoneNumber,
-      driverName: userName || currentUser?.name || 'Driver',
-      name: userName || currentUser?.name || 'Driver',
-      rating: currentUser?.rating ?? 4.8,
-      from: sourceLocation.address || 'Pickup',
-      to: destinationLocation.address || 'Drop',
-      time: departureTime,
-      price: numericPrice,
-      seats: seatCount,
-      vehicleType,
-      vehicleNumber,
-      sourceLocation,
-      destinationLocation,
-      status: 'available',
-      isStored: true,
-    };
-
-    await addRide(ride);
-
-    navigation.navigate('Matches', {
-      tripType: 'offer',
-      vehicleType,
-      seatCount,
-      price: numericPrice,
-      tripId: createdTrip?.id,
-      source: sourceLocation,
-      destination: destinationLocation,
-      currentUser,
-      userInfo: {
-        name: userName,
-        phone: phoneNumber,
-        vehicleNumber,
-      },
-    });
   }
 
   function handleMyRidesPress() {
@@ -409,6 +435,26 @@ export function OfferRideScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Trip Schedule</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <TextInput
+                style={styles.input}
+                value={departureDate}
+                editable={false}
+              />
+            </View>
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <TextInput
+                style={styles.input}
+                value={departureTime}
+                editable={false}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Price per Seat</Text>
           <View style={styles.inputContainer}>
             <DollarSign size={20} color={colors.text.secondary} />
@@ -471,11 +517,16 @@ export function OfferRideScreen({ navigation, route }) {
 
         <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.confirmButton}
+            style={[styles.confirmButton, creating && { opacity: 0.7 }]}
             onPress={handleConfirm}
+            disabled={creating}
             activeOpacity={0.9}
           >
-            <Text style={styles.confirmButtonText}>Confirm & Publish Ride</Text>
+            {creating ? (
+              <ActivityIndicator color={colors.button.primaryText} />
+            ) : (
+              <Text style={styles.confirmButtonText}>Confirm & Publish Ride</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

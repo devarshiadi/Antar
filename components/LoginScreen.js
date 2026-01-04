@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppTheme } from '../helpers/use-app-theme';
@@ -16,12 +16,19 @@ const LoginScreen = ({ navigation }) => {
   }, [colors]);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleLogin() {
     const trimmedPhone = phoneNumber.trim();
     if (!trimmedPhone) {
+      setError('Please enter a phone number');
       return;
     }
+
+    setLoading(true);
+    setError('');
+
     try {
       const result = await authService.login(trimmedPhone, password);
       if (result && result.access_token && result.user) {
@@ -32,9 +39,23 @@ const LoginScreen = ({ navigation }) => {
         });
         return;
       }
-      navigation.navigate('Verification', { phoneNumber: trimmedPhone });
-    } catch (error) {
-      navigation.navigate('Verification', { phoneNumber: trimmedPhone });
+      // If login successful but no token (e.g. requires verification), usually handled by backend returning 401 or specific code
+      // But based on current auth service, login returns token. 
+      // If we fall here, something is odd, but let's assume verification needed if backend says so?
+      // Actually, standard login should just work or fail. 
+
+    } catch (err) {
+      console.error('Login error:', err);
+      // If user is not verified, backend might return a specific error or we might handle it.
+      // For now, let's display the error.
+      setError(err.message || 'Login failed. Please check your credentials.');
+
+      // OPTIONAL: If backend says "User not verified", specific handling:
+      if (err.message && err.message.includes('verified')) {
+        navigation.navigate('Verification', { phoneNumber: trimmedPhone });
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -43,6 +64,8 @@ const LoginScreen = ({ navigation }) => {
       <StatusBar barStyle={statusBarStyle} backgroundColor={colors.bg.primary} />
       <Text style={styles.headerTitle}>Antar</Text>
       <Text style={styles.greetingText}>Welcome back! Please login.</Text>
+
+      {error ? <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text> : null}
 
       <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { color: colors.text.secondary }]}>Phone Number</Text>
@@ -72,8 +95,16 @@ const LoginScreen = ({ navigation }) => {
         <Text style={[styles.forgotPasswordText, { color: colors.text.secondary }]}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginButtonText}>Log In</Text>
+      <TouchableOpacity
+        style={[styles.loginButton, loading && { opacity: 0.7 }]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.button.primaryText} />
+        ) : (
+          <Text style={styles.loginButtonText}>Log In</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={[styles.orConnectWith, { color: colors.text.secondary }]}>Or connect with</Text>

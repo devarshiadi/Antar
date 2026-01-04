@@ -620,13 +620,50 @@ export function getHomeStyles(theme) {
       color: theme.accent,
       fontWeight: '600',
     },
-    manualInlineCancel: {
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
     manualInlineCancelText: {
       color: theme.textSecondary,
       fontSize: 12,
+    },
+    // Active Trip Card
+    activeTripCard: {
+      marginBottom: 20,
+      marginHorizontal: 0,
+      borderRadius: 16,
+      overflow: 'hidden',
+      elevation: 4,
+      shadowColor: '#4facfe',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+    activeTripGradient: {
+      padding: 16,
+    },
+    activeTripContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    activeTripIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    activeTripTextContainer: {
+      flex: 1,
+    },
+    activeTripTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#fff',
+      marginBottom: 4,
+    },
+    activeTripSubtitle: {
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.9)',
     },
   });
 }

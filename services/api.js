@@ -1,9 +1,13 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Change this to your computer's IP address for testing on real device
-// For emulator: use 10.0.2.2 (Android) or localhost (iOS)
-const API_URL = 'http://localhost:8000';
+// API Configuration
+// Change this to your backend URL
+// - For local development: http://localhost:8000
+// - For Android emulator: http://10.0.2.2:8000
+// - For HuggingFace: https://your-gateway-space.hf.space
+const API_URL = 'https://loginx-gatewayservice.hf.space';
+const WS_URL = API_URL.replace('http', 'ws');
 
 // Axios instance
 const api = axios.create({
@@ -11,6 +15,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
 // Request interceptor to add auth token
@@ -32,9 +37,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token expired, clear storage and redirect to login
+      // Token expired, clear storage
       await AsyncStorage.removeItem('access_token');
-      // You can add navigation logic here
+      await AsyncStorage.removeItem('user');
     }
     return Promise.reject(error);
   }
@@ -96,6 +101,17 @@ export const authService = {
     await AsyncStorage.removeItem('access_token');
     await AsyncStorage.removeItem('user');
   },
+
+  resendOTP: async (phoneNumber) => {
+    try {
+      const response = await api.post('/api/auth/resend-otp', {
+        phone_number: phoneNumber,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // ==================== USER SERVICES ====================
@@ -113,16 +129,20 @@ export const userService = {
   updateProfile: async (userData) => {
     try {
       const response = await api.put('/api/users/me', userData);
-      await AsyncStorage.setItem('user', JSON.stringify(response.data));
+      await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  updateLocation: async (locationData) => {
+  // Switch between rider and passenger roles
+  switchRole: async (role) => {
     try {
-      const response = await api.post('/api/users/location', locationData);
+      const response = await api.post('/api/users/switch-role', { role });
+      if (response.data.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+      }
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -130,48 +150,97 @@ export const userService = {
   },
 };
 
-// ==================== TRIP SERVICES ====================
+// ==================== RIDE SERVICES ====================
 
-export const tripService = {
-  createTrip: async (tripData) => {
+export const rideService = {
+  createRide: async (rideData) => {
     try {
-      const response = await api.post('/api/trips', tripData);
+      const response = await api.post('/api/rides', rideData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  getMyTrips: async () => {
+  getMyRides: async () => {
     try {
-      const response = await api.get('/api/trips/my-trips');
+      const response = await api.get('/api/rides/my-rides');
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  getTrip: async (tripId) => {
+  getAvailableRides: async (type = '') => {
     try {
-      const response = await api.get(`/api/trips/${tripId}`);
+      const response = await api.get('/api/rides', { params: { type } });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  updateTrip: async (tripId, updateData) => {
+  getRide: async (rideId) => {
     try {
-      const response = await api.put(`/api/trips/${tripId}`, updateData);
+      const response = await api.get(`/api/rides/${rideId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  cancelTrip: async (tripId) => {
+  updateRide: async (rideId, updateData) => {
     try {
-      const response = await api.delete(`/api/trips/${tripId}`);
+      const response = await api.put(`/api/rides/${rideId}`, updateData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  cancelRide: async (rideId) => {
+    try {
+      const response = await api.delete(`/api/rides/${rideId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  requestToJoin: async (rideId, seatsNeeded = 1) => {
+    try {
+      const response = await api.post(`/api/rides/${rideId}/request`, {
+        seats_needed: seatsNeeded,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  respondToRequest: async (rideId, requestId, action) => {
+    try {
+      const response = await api.put(`/api/rides/${rideId}/request/${requestId}`, {
+        action, // 'accept' or 'reject'
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getRequestsForRide: async (rideId) => {
+    try {
+      const response = await api.get(`/api/rides/${rideId}/requests`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  completeRide: async (rideId) => {
+    try {
+      const response = await api.post(`/api/rides/${rideId}/complete`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -182,50 +251,59 @@ export const tripService = {
 // ==================== MATCH SERVICES ====================
 
 export const matchService = {
-  getMatches: async (tripId) => {
+  getMatches: async (rideId) => {
     try {
-      const response = await api.get(`/api/matches/${tripId}`);
+      const response = await api.get(`/api/matches/${rideId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  findMatches: async (tripId) => {
+  findMatches: async (rideId) => {
     try {
-      const response = await api.get(`/api/matches/find/${tripId}`);
+      const response = await api.get(`/api/matches/find/${rideId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  },
-
-  updateMatch: async (matchId, status) => {
-    try {
-      const response = await api.put(`/api/matches/${matchId}`, { status });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  acceptMatch: async (matchId) => {
-    return matchService.updateMatch(matchId, 'accepted');
-  },
-
-  rejectMatch: async (matchId) => {
-    return matchService.updateMatch(matchId, 'rejected');
   },
 };
 
 // ==================== CHAT SERVICES ====================
 
 export const chatService = {
-  sendMessage: async (tripId, receiverId, content) => {
+  getThreads: async () => {
     try {
-      const response = await api.post(`/api/chat/${tripId}/message`, {
-        receiver_id: receiverId,
-        content: content,
+      const response = await api.get('/api/chat/threads');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getThread: async (threadId) => {
+    try {
+      const response = await api.get(`/api/chat/threads/${threadId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getThreadByRide: async (rideId) => {
+    try {
+      const response = await api.get(`/api/chat/ride/${rideId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getMessages: async (threadId, limit = 50, offset = 0) => {
+    try {
+      const response = await api.get(`/api/chat/threads/${threadId}/messages`, {
+        params: { limit, offset },
       });
       return response.data;
     } catch (error) {
@@ -233,9 +311,32 @@ export const chatService = {
     }
   },
 
-  getChatHistory: async (tripId) => {
+  sendMessage: async (threadId, content, type = 'text') => {
     try {
-      const response = await api.get(`/api/chat/${tripId}/history`);
+      const response = await api.post(`/api/chat/threads/${threadId}/messages`, {
+        content,
+        type,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  markAsRead: async (threadId) => {
+    try {
+      const response = await api.put(`/api/chat/threads/${threadId}/read`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  sendTypingIndicator: async (threadId, isTyping) => {
+    try {
+      const response = await api.post(`/api/chat/threads/${threadId}/typing`, {
+        is_typing: isTyping,
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -243,21 +344,63 @@ export const chatService = {
   },
 };
 
-// ==================== NOTIFICATION SERVICES ====================
+// ==================== LOCATION SERVICES ====================
 
-export const notificationService = {
-  getNotifications: async () => {
+export const locationService = {
+  searchLocation: async (query, lat = null, lng = null) => {
     try {
-      const response = await api.get('/api/notifications');
+      const params = { q: query };
+      if (lat && lng) {
+        params.lat = lat;
+        params.lng = lng;
+      }
+      const response = await api.get('/api/geocode/search', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
   },
 
-  markAsRead: async (notificationId) => {
+  reverseGeocode: async (lat, lng) => {
     try {
-      const response = await api.put(`/api/notifications/${notificationId}/read`);
+      const response = await api.get('/api/geocode/reverse', {
+        params: { lat, lng },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  calculateRoute: async (fromLat, fromLng, toLat, toLng) => {
+    try {
+      const response = await api.get('/api/route', {
+        params: { from_lat: fromLat, from_lng: fromLng, to_lat: toLat, to_lng: toLng },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  updateLocation: async (rideId, lat, lng, heading = 0, speed = 0) => {
+    try {
+      const response = await api.post('/api/location/update', {
+        ride_id: rideId,
+        lat,
+        lng,
+        heading,
+        speed,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getLiveLocation: async (rideId) => {
+    try {
+      const response = await api.get(`/api/location/live/${rideId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -265,40 +408,45 @@ export const notificationService = {
   },
 };
 
-// ==================== WEBSOCKET SERVICE ====================
+// ==================== WEBSOCKET SERVICES ====================
 
-export function createLocationWebSocket(userId) {
+// Create WebSocket connection for real-time ride updates
+export function createRidesWebSocket(userId) {
   let ws = null;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
 
   function connect(onMessage, onError) {
-    const wsUrl = `ws://localhost:8000/ws/location/${userId}`;
-    
+    const wsUrl = `${WS_URL}/ws/rides?userId=${userId}`;
+
     try {
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('Rides WebSocket connected');
         reconnectAttempts = 0;
       };
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (onMessage) {
-          onMessage(data);
+        try {
+          const data = JSON.parse(event.data);
+          if (onMessage) {
+            onMessage(data);
+          }
+        } catch (e) {
+          console.error('Failed to parse message:', e);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('Rides WebSocket error:', error);
         if (onError) {
           onError(error);
         }
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log('Rides WebSocket disconnected');
         reconnect(onMessage, onError);
       };
     } catch (error) {
@@ -313,7 +461,7 @@ export function createLocationWebSocket(userId) {
     if (reconnectAttempts < maxReconnectAttempts) {
       reconnectAttempts += 1;
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-      
+
       setTimeout(() => {
         console.log(`Reconnecting... Attempt ${reconnectAttempts}`);
         connect(onMessage, onError);
@@ -336,10 +484,212 @@ export function createLocationWebSocket(userId) {
 
   return {
     connect,
-    reconnect,
     send,
     disconnect,
   };
 }
+
+// Create WebSocket connection for real-time chat
+export function createChatWebSocket(userId, threadId = null) {
+  let ws = null;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+
+  function connect(onMessage, onError) {
+    let wsUrl = `${WS_URL}/ws/chat?userId=${userId}`;
+    if (threadId) {
+      wsUrl += `&threadId=${threadId}`;
+    }
+
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('Chat WebSocket connected');
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (onMessage) {
+            onMessage(data);
+          }
+        } catch (e) {
+          console.error('Failed to parse message:', e);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('Chat WebSocket error:', error);
+        if (onError) {
+          onError(error);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Chat WebSocket disconnected');
+        reconnect(onMessage, onError);
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
+      if (onError) {
+        onError(error);
+      }
+    }
+  }
+
+  function reconnect(onMessage, onError) {
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts += 1;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+
+      setTimeout(() => {
+        console.log(`Reconnecting... Attempt ${reconnectAttempts}`);
+        connect(onMessage, onError);
+      }, delay);
+    }
+  }
+
+  function send(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+    }
+  }
+
+  function sendMessage(content) {
+    send({
+      type: 'message',
+      thread_id: threadId,
+      payload: { content },
+    });
+  }
+
+  function sendTyping(isTyping) {
+    send({
+      type: 'typing',
+      thread_id: threadId,
+      payload: { is_typing: isTyping },
+    });
+  }
+
+  function subscribeToThread(newThreadId) {
+    send({
+      type: 'subscribe',
+      payload: newThreadId,
+    });
+  }
+
+  function disconnect() {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+  }
+
+  return {
+    connect,
+    send,
+    sendMessage,
+    sendTyping,
+    subscribeToThread,
+    disconnect,
+  };
+}
+
+// Create WebSocket connection for real-time location
+export function createLocationWebSocket(userId, rideId) {
+  let ws = null;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+
+  function connect(onMessage, onError) {
+    const wsUrl = `${WS_URL}/ws/location/${rideId}?userId=${userId}`;
+
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('Location WebSocket connected');
+        reconnectAttempts = 0;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (onMessage) {
+            onMessage(data);
+          }
+        } catch (e) {
+          console.error('Failed to parse message:', e);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('Location WebSocket error:', error);
+        if (onError) {
+          onError(error);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Location WebSocket disconnected');
+        reconnect(onMessage, onError);
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket:', error);
+      if (onError) {
+        onError(error);
+      }
+    }
+  }
+
+  function reconnect(onMessage, onError) {
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts += 1;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+
+      setTimeout(() => {
+        console.log(`Reconnecting... Attempt ${reconnectAttempts}`);
+        connect(onMessage, onError);
+      }, delay);
+    }
+  }
+
+  function send(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+    }
+  }
+
+  function sendLocation(lat, lng, heading = 0, speed = 0) {
+    send({
+      type: 'location_update',
+      ride_id: rideId,
+      payload: { lat, lng, heading, speed },
+    });
+  }
+
+  function disconnect() {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+  }
+
+  return {
+    connect,
+    send,
+    sendLocation,
+    disconnect,
+  };
+}
+
+// Legacy exports for backwards compatibility
+export const tripService = rideService;
+export const notificationService = {
+  getNotifications: async () => ({ notifications: [], count: 0 }),
+  markAsRead: async () => ({ message: 'Marked as read' }),
+};
 
 export default api;

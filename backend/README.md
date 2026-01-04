@@ -1,180 +1,238 @@
-# ANTAR Backend API
+# 🚀 Antar Backend - Golang Microservices
 
-FastAPI backend for ANTAR ride-sharing application.
+A production-ready microservices backend for the Antar ride-sharing app, built with **Go** and designed for deployment on **HuggingFace Spaces**.
 
-## Features
+## 📋 Architecture
 
-- ✅ User Authentication (JWT)
-- ✅ OTP Verification (Demo mode - prints to console)
-- ✅ Trip Creation & Management
-- ✅ Intelligent Route Matching Algorithm
-- ✅ Real-time Location Tracking
-- ✅ Chat/Messaging System
-- ✅ Notifications
-- ✅ WebSocket Support
-- ✅ SQLite Database (Demo friendly)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        API Gateway (:8000)                       │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+    ┌──────────────────────┼──────────────────────┐
+    │                      │                      │
+    ▼                      ▼                      ▼
+┌─────────┐         ┌─────────────┐         ┌─────────┐
+│  Auth   │         │ Matchmaking │         │  Chat   │
+│ (:8001) │         │   (:8002)   │         │ (:8003) │
+└────┬────┘         └──────┬──────┘         └────┬────┘
+     │                     │                     │
+     ▼                     ▼                     ▼
+┌─────────┐         ┌─────────────┐         ┌─────────┐
+│auth.db  │         │  rides.db   │         │ chat.db │
+└─────────┘         └─────────────┘         └─────────┘
 
-## Setup
+                    ┌──────────────┐
+                    │   Location   │
+                    │   (:8004)    │
+                    └──────┬───────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │  Nominatim   │
+                    │    OSRM      │
+                    └──────────────┘
+```
 
-1. **Install Dependencies**
+## 🛠️ Tech Stack
+
+- **Language**: Go 1.21+
+- **Framework**: Gin (HTTP), Gorilla (WebSocket)
+- **Database**: SQLite (demo) / PostgreSQL (production)
+- **Auth**: JWT (golang-jwt/jwt/v5)
+- **Maps**: Nominatim (OpenStreetMap) for geocoding
+- **Routing**: OSRM (Open Source Routing Machine)
+
+## 📁 Project Structure
+
+```
+backend/
+├── cmd/                         # Service entrypoints
+│   ├── auth/main.go
+│   ├── matchmaking/main.go
+│   ├── chat/main.go
+│   ├── location/main.go
+│   └── gateway/main.go
+├── internal/                    # Private application code
+│   ├── auth/
+│   ├── matchmaking/
+│   ├── chat/
+│   └── location/
+├── pkg/                         # Shared packages
+│   ├── config/
+│   ├── database/
+│   ├── jwt/
+│   ├── middleware/
+│   └── websocket/
+├── deployments/                 # Deployment configs
+│   └── docker/
+│       ├── Dockerfile.auth
+│       ├── Dockerfile.matchmaking
+│       ├── Dockerfile.chat
+│       ├── Dockerfile.location
+│       └── Dockerfile.gateway
+├── go.mod
+├── go.sum
+└── README.md
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Go 1.21+
+- Docker (optional, for containerized deployment)
+
+### Local Development
+
+1. **Install dependencies**:
+   ```bash
+   cd backend
+   go mod download
+   ```
+
+2. **Run all services** (in separate terminals):
+   ```bash
+   # Terminal 1 - Auth Service
+   AUTH_PORT=8001 go run ./cmd/auth
+
+   # Terminal 2 - Matchmaking Service
+   MATCHMAKING_PORT=8002 go run ./cmd/matchmaking
+
+   # Terminal 3 - Chat Service
+   CHAT_PORT=8003 go run ./cmd/chat
+
+   # Terminal 4 - Location Service
+   LOCATION_PORT=8004 go run ./cmd/location
+
+   # Terminal 5 - API Gateway
+   PORT=8000 go run ./cmd/gateway
+   ```
+
+3. **Or use Docker Compose**:
+   ```bash
+   docker-compose up
+   ```
+
+## 📡 API Endpoints
+
+### Auth Service (`:8001`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login user |
+| POST | `/api/auth/verify-otp` | Verify OTP |
+| GET | `/api/users/me` | Get current user |
+| PUT | `/api/users/me` | Update profile |
+| POST | `/api/users/switch-role` | Switch rider/passenger |
+
+### Matchmaking Service (`:8002`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/rides` | Create ride |
+| GET | `/api/rides` | List available rides |
+| GET | `/api/rides/:id` | Get ride details |
+| POST | `/api/rides/:id/request` | Request to join |
+| PUT | `/api/rides/:id/request/:reqId` | Accept/reject request |
+| GET | `/api/matches/:rideId` | Get matches |
+| WS | `/ws/rides` | Real-time updates |
+
+### Chat Service (`:8003`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/chat/threads` | Get user's threads |
+| POST | `/api/chat/threads` | Create thread |
+| GET | `/api/chat/threads/:id/messages` | Get messages |
+| POST | `/api/chat/threads/:id/messages` | Send message |
+| WS | `/ws/chat` | Real-time messaging |
+
+### Location Service (`:8004`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/geocode/search` | Search locations |
+| GET | `/api/geocode/reverse` | Reverse geocode |
+| GET | `/api/route` | Calculate route |
+| POST | `/api/location/update` | Update live location |
+| WS | `/ws/location/:rideId` | Real-time location |
+
+## 🎯 Key Features
+
+### Role Switching
+Users can switch between **rider** and **passenger** roles anytime, as long as they don't have an active booking:
+
 ```bash
-cd backend
-pip install -r requirements.txt
+POST /api/users/switch-role
+{
+  "role": "rider"  // or "passenger"
+}
 ```
 
-2. **Run Server**
-```bash
-python main.py
-```
+### Matching Algorithm
+The intelligent matching system uses:
+- **Route Overlap (50%)**: Haversine distance calculation
+- **Time Difference (25%)**: Within 60-minute window
+- **User Ratings (25%)**: Combined average bonus
 
-Or using uvicorn:
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+Minimum match score: **70/100**
 
-3. **Access API Documentation**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### Real-time Features
+- **WebSocket** connections for:
+  - Ride updates and new matches
+  - Chat messaging with typing indicators
+  - Live location sharing during trips
 
-## API Endpoints
+## 🐳 HuggingFace Deployment
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `POST /api/auth/verify-otp` - Verify OTP code
+Each microservice has its own Dockerfile for separate HuggingFace Spaces:
 
-### Users
-- `GET /api/users/me` - Get current user profile
-- `PUT /api/users/me` - Update profile
-- `POST /api/users/location` - Update location
+1. **Create a new HuggingFace Space** (Docker SDK)
+2. **Copy the appropriate Dockerfile** and source code
+3. **Set environment variables** in Space settings
+4. **Deploy!**
 
-### Trips
-- `POST /api/trips` - Create new trip
-- `GET /api/trips/my-trips` - Get user's trips
-- `GET /api/trips/{trip_id}` - Get trip details
-- `PUT /api/trips/{trip_id}` - Update trip
-- `DELETE /api/trips/{trip_id}` - Cancel trip
+### Environment Variables
 
-### Matches
-- `GET /api/matches/{trip_id}` - Get matches for trip
-- `GET /api/matches/find/{trip_id}` - Trigger matching
-- `PUT /api/matches/{match_id}` - Accept/reject match
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Service port | 7860 (HF default) |
+| `JWT_SECRET` | JWT signing key | (change in prod!) |
+| `DATABASE_PATH` | SQLite data directory | ./data |
+| `AUTH_SERVICE_URL` | Auth service URL | http://localhost:8001 |
+| `NOMINATIM_URL` | Nominatim API URL | https://nominatim.openstreetmap.org |
+| `OSRM_URL` | OSRM API URL | https://router.project-osrm.org |
 
-### Chat
-- `POST /api/chat/{trip_id}/message` - Send message
-- `GET /api/chat/{trip_id}/history` - Get chat history
-
-### Notifications
-- `GET /api/notifications` - Get notifications
-- `PUT /api/notifications/{notification_id}/read` - Mark as read
-
-### WebSocket
-- `WS /ws/location/{user_id}` - Real-time location updates
-
-## Demo Mode
-
-### OTP Verification
-When you register or login, the OTP will be printed in the console:
-```
-📱 OTP for +919876543210: 123456
-```
-
-For testing, use OTP: **123456**
-
-### Database
-SQLite database file: `antar.db` (auto-created on first run)
-
-## Route Matching Algorithm
-
-The matching algorithm considers:
-1. **Route Overlap (50%)** - How much routes overlap
-2. **Time Difference (25%)** - Departure time proximity
-3. **User Ratings (25%)** - Combined user ratings
-
-**Minimum Match Score**: 70/100  
-**Minimum Route Overlap**: 60%
-
-## React Native Integration
-
-### Installation
-```bash
-cd ../
-npm install axios
-```
-
-### Example Usage
-```javascript
-import axios from 'axios';
-
-const API_URL = 'http://localhost:8000';
-
-// Register
-const register = async () => {
-  const response = await axios.post(`${API_URL}/api/auth/register`, {
-    phone_number: '+919876543210',
-    full_name: 'John Doe',
-    password: 'password123',
-    role: 'both',
-    is_driver: true
-  });
-  return response.data;
-};
-
-// Create Trip
-const createTrip = async (token) => {
-  const response = await axios.post(
-    `${API_URL}/api/trips`,
-    {
-      trip_type: 'offer',
-      origin_latitude: 12.9716,
-      origin_longitude: 77.5946,
-      origin_address: 'MG Road, Bangalore',
-      destination_latitude: 12.9698,
-      destination_longitude: 77.7499,
-      destination_address: 'Whitefield, Bangalore',
-      departure_date: '2024-11-05',
-      departure_time: '09:00',
-      seats_available: 2,
-      price: 100
-    },
-    {
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
-  return response.data;
-};
-```
-
-## Testing
+## 🧪 Testing
 
 ```bash
-# Test registration
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phone_number": "+919876543210",
-    "full_name": "Test User",
-    "password": "password123",
-    "role": "both",
-    "is_driver": true
-  }'
+# Run all tests
+go test ./...
 
-# Get all trips
-curl http://localhost:8000/api/trips/my-trips
+# With coverage
+go test -cover ./...
+
+# Specific package
+go test ./internal/matchmaking/...
 ```
 
-## Production Deployment
+## 📝 Demo Credentials
 
-For production:
-1. Replace SQLite with PostgreSQL + PostGIS
-2. Add Redis for caching & real-time data
-3. Implement real SMS gateway for OTP
-4. Add proper authentication middleware
-5. Enable HTTPS
-6. Set environment variables for secrets
-7. Add rate limiting
-8. Implement proper logging
+```
+Phone: +919876543210
+Password: password123
+OTP: 123456 (demo mode)
+```
 
-## License
+## 🔒 Security Notes
 
-MIT
+- Change `JWT_SECRET` in production
+- Use HTTPS for all external communication
+- Rate limiting is implemented for geocoding APIs
+- Consider Redis for session management at scale
+
+## 📄 License
+
+MIT License - Use freely for learning and commercial projects.

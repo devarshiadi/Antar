@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme } from '../helpers/use-app-theme';
 
@@ -87,10 +87,21 @@ function getStyles(colors) {
       alignItems: 'center',
       marginBottom: 15,
       elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+        },
+        android: {
+          shadowColor: '#000',
+          elevation: 3,
+        },
+        web: {
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.25)',
+        }
+      }),
     },
     nextButtonText: {
       fontSize: Math.min(width * 0.042, 17),
@@ -151,8 +162,8 @@ const WelcomeScreen = ({ navigation }) => {
             />
           ))}
         </View>
-        <TouchableOpacity 
-          style={styles.nextButton} 
+        <TouchableOpacity
+          style={styles.nextButton}
           onPress={handleNext}
           activeOpacity={0.8}
         >

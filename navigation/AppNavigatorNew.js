@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
-import { getAppTheme } from '../helpers/use-app-theme';
+import { useAppTheme } from '../helpers/use-app-theme';
 import { useSession } from '../helpers/session-context';
 
 // Auth Screens
@@ -21,16 +21,16 @@ import TripHistoryScreenNew from '../components/trips/trip-history-screen';
 import MyRidesScreen from '../components/trips/my-rides-screen';
 
 // Other Screens (keep existing)
-import CreateTripScreen from '../components/CreateTripScreen';
+
 import LocationPickerScreen from '../components/trips/location-picker-screen';
 import ActiveTripScreen from '../components/trips/active-trip-screen';
 import OfferRideScreen from '../components/trips/offer-ride-screen';
 
 const Stack = createNativeStackNavigator();
 
+
 function AppNavigatorNew() {
-  const colorScheme = useColorScheme();
-  const { navigationTheme, colors } = getAppTheme(colorScheme);
+  const { navigationTheme, colors } = useAppTheme();
   const { bootstrapped, isAuthenticated } = useSession();
 
   if (!bootstrapped) {
@@ -72,7 +72,7 @@ function AppNavigatorNew() {
         <Stack.Screen name="MyRides" component={MyRidesScreen} />
 
         {/* Other Screens */}
-        <Stack.Screen name="CreateTrip" component={CreateTripScreen} />
+
         <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
         <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
         <Stack.Screen name="OfferRide" component={OfferRideScreen} />
